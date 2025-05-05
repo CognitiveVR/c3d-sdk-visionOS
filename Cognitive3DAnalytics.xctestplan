@@ -1,0 +1,28 @@
+{
+  "configurations" : [
+    {
+      "id" : "7322A49B-B218-4D9D-A1FC-9EF0435346B4",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "skippedTests" : [
+        "NetworkClientTests\/testLiveEventPost()"
+      ],
+      "target" : {
+        "containerPath" : "container:Cognitive3D-Analytics-core.xcodeproj",
+        "identifier" : "5491D3B52CDC4F4A00E2BF5D",
+        "name" : "c3d-swift-sdkTests"
+      }
+    }
+  ],
+  "version" : 1
+}
