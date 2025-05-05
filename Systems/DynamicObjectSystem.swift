@@ -5,13 +5,6 @@
 //  Created by Manjit Bedi on 2025-01-31.
 //
 
-//
-//  DynamicObjectSystem.swift
-//  Cognitive3D SDK Example
-//
-//  Created by Manjit Bedi on 2025-01-31.
-//
-
 import RealityKit
 import Cognitive3DAnalytics
 import RealityKitContent
