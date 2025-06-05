@@ -5,15 +5,25 @@
 //  Created by Manjit Bedi on 2025-01-31.
 //
 
-import RealityKit
 import Cognitive3DAnalytics
+import RealityKit
 import RealityKitContent
 
 /// This class works with the Dynamic object manager in the C3D SDK to record dynamic object data for the active analytics session.
 public final class DynamicObjectSystem: System {
     // Query to find all entities with DynamicComponent
     private static let query = EntityQuery(where: .has(DynamicComponent.self))
-    private var inactiveStates: [String: Bool] = [:]
+
+    private enum EntityState {
+        case disabled
+        case enabledNeedsUpdate
+        case enabledUpdated
+    }
+
+    // Dictionary to track entity states
+    private var entityStates: [String: EntityState] = [:]
+
+    // The dynamic object manager in the C3D SDK.
     private var dynamicManager: DynamicDataManager?
 
     var isDebugVerbose = false
@@ -27,8 +37,8 @@ public final class DynamicObjectSystem: System {
 
         self.dynamicManager = dynamicManager
     }
-    
-    // Using a system, update the transforms of dynamic objects. The data gets posted to the C3D servers.
+
+    // Using a system, record the transforms of dynamic objects. The data gets posted to the C3D servers.
     public func update(context: SceneUpdateContext) {
         Task {
             await processEntities(context: context)
@@ -46,34 +56,92 @@ public final class DynamicObjectSystem: System {
             // Capture current entity state
             let isParentNil = await isEntityParentNil(entity)
             let isEntityActive = await checkEntityActive(entity)
+            let isEnabled = !isParentNil && isEntityActive
+            let id = dynamicComponent.dynamicId
 
-            if isParentNil || !isEntityActive {
-                await handleEnabledStateChange(entity, component: dynamicComponent)
+            // Handle based on enabled state
+            if !isEnabled {
+                await handleDisabledEntity(entity, id: id)
                 continue
             }
 
-            // TODO: we don't need to send this every time. Only when the property has changed.
-            let properties = [["enabled": AnyCodable(true)]]
-
-            // Get position and orientation in world space
-            let position = await getWorldPosition(entity)
-            let rotation = await getWorldRotation(entity)
-            let scale = await getWorldScale(entity)
-
-            // Create the data object that gets stored in the dynamic manager to eventually
-            // get posted to the C3D back end.
-            await dynamicManager?.recordDynamicObject(
-                id: dynamicComponent.dynamicId,
-                position: position,
-                rotation: rotation,
-                scale: scale,
-                positionThreshold: dynamicComponent.positionThreshold,
-                rotationThreshold: dynamicComponent.rotationThreshold,
-                scaleThreshold: dynamicComponent.scaleThreshold,
-                updateRate: dynamicComponent.updateRate,
-                properties: properties
-            )
+            await handleEnabledEntity(entity, dynamicComponent: dynamicComponent)
         }
+    }
+
+    /// Handle entity that is currently disabled
+    private func handleDisabledEntity(_ entity: Entity, id: String) async {
+        // Entity is now disabled
+        let wasEnabled = await MainActor.run {
+            let currentState = entityStates[id]
+            let wasEnabled = currentState != .disabled && currentState != nil
+            entityStates[id] = .disabled
+            return wasEnabled
+        }
+
+        // If transitioning from enabled to disabled, remove from tracking
+        if wasEnabled && dynamicManager != nil {
+            if isDebugVerbose {
+                print("Entity '\(await entity.name)' with dynamic ID \(id) is being removed from tracking.")
+            }
+            await dynamicManager?.removeDynamicObject(id: id)
+        }
+    }
+
+    /// Handle entity that is currently enabled
+    private func handleEnabledEntity(_ entity: Entity, dynamicComponent: DynamicComponent) async {
+        let id = dynamicComponent.dynamicId
+
+        // Check if properties update is needed
+        let needsPropertyUpdate = await checkPropertyUpdateNeeded(id)
+
+        // Only send properties when needed
+        let properties: [[String: AnyCodable]]? = needsPropertyUpdate ?
+            [["enabled": AnyCodable(true)]] : nil
+
+        // Update transform data
+        await updateEntityTransform(entity, dynamicComponent: dynamicComponent, properties: properties)
+    }
+
+    /// Check if this entity needs a property update and update state accordingly
+    private func checkPropertyUpdateNeeded(_ id: String) async -> Bool {
+        return await MainActor.run {
+            let currentState = entityStates[id]
+
+            if currentState == .disabled || currentState == nil {
+                // Transitioning from disabled to enabled or new entity
+                entityStates[id] = .enabledNeedsUpdate
+                return true
+            } else if currentState == .enabledNeedsUpdate {
+                // Already enabled but needs update
+                entityStates[id] = .enabledUpdated
+                return true
+            }
+
+            // Already enabled and updated
+            return false
+        }
+    }
+
+    /// Update entity transform data and send to analytics system
+    private func updateEntityTransform(_ entity: Entity, dynamicComponent: DynamicComponent, properties: [[String: AnyCodable]]?) async {
+        // Get position and orientation in world space
+        let position = await getWorldPosition(entity)
+        let rotation = await getWorldRotation(entity)
+        let scale = await getWorldScale(entity)
+
+        // Create the data object that gets stored in the dynamic manager
+        await dynamicManager?.recordDynamicObject(
+            id: dynamicComponent.dynamicId,
+            position: position,
+            rotation: rotation,
+            scale: scale,
+            positionThreshold: dynamicComponent.positionThreshold,
+            rotationThreshold: dynamicComponent.rotationThreshold,
+            scaleThreshold: dynamicComponent.scaleThreshold,
+            updateRate: dynamicComponent.updateRate,
+            properties: properties
+        )
     }
 
     // Helper methods to safely access entity properties across actor boundaries
@@ -82,44 +150,17 @@ public final class DynamicObjectSystem: System {
             entity.components[DynamicComponent.self]
         }
     }
-    
+
     // MARK: - entity handling
     private func isEntityParentNil(_ entity: Entity) async -> Bool {
         return await MainActor.run {
             entity.parent == nil
         }
     }
-    
+
     private func checkEntityActive(_ entity: Entity) async -> Bool {
         return await MainActor.run {
             entity.isActive
-        }
-    }
-
-    // MARK: - entity state enabled (active)
-    private func handleEnabledStateChange(_ entity: Entity, component: DynamicComponent) async {
-        let isDisabled = await MainActor.run {
-            !entity.isEnabled || !entity.isActive
-        }
-        
-        if isDisabled {
-            // Perform both check and update atomically on the MainActor
-            let shouldRemove = await MainActor.run {
-                // If not already inactive, mark as inactive and return true
-                if inactiveStates[component.dynamicId] != true {
-                    inactiveStates[component.dynamicId] = true
-                    return true
-                }
-                return false
-            }
-            
-            // Only remove if we successfully marked it as inactive
-            if shouldRemove && dynamicManager != nil {
-                if isDebugVerbose {
-                    print("Entity '\(await entity.name)' with dynamic ID \(component.dynamicId) is being removed from tracking.")
-                }
-                await dynamicManager?.removeDynamicObject(id: component.dynamicId)
-            }
         }
     }
 

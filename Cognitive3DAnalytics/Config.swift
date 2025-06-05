@@ -57,7 +57,7 @@ public class Config {
     var isRecordingPitch: Bool = true
 
     /// Controls whether headset yaw data should be recorded during sessions.
-    var isRecordingYaw: Bool = true
+    var isRecordingYaw: Bool = false
 
     /// Controls whether battery levels should be recorded during sessions.
     var isRecordingBatteryLevel: Bool = true
@@ -84,4 +84,6 @@ public class Config {
 
     /// If the Internet connection becomes unavailable & there is data to send later this can be used to monitor the Internconenctivity.
     public var useSyncServices = false
+
+    public var isHandTrackingRequired = false
 }

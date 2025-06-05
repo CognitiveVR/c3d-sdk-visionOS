@@ -73,6 +73,11 @@ import Observation
         isSending = true
 
         let eventsBeingSent = gazeEvents
+
+        #if DEBUG
+        logger.info("Batch gazes with \(eventsBeingSent.count)")
+        #endif
+
         gazeEvents.removeAll()
 
         // Get device properties struct, then convert to dictionary

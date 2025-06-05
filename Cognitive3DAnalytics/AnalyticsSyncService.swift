@@ -7,8 +7,7 @@
 
 import Foundation
 
-/// The AnalyticsSyncService coordinates synchronization of cached analytics data
-/// when network connectivity is available.
+/// The AnalyticsSyncService coordinates synchronization of the local data cache when network connectivity is available.
 @MainActor
 public class AnalyticsSyncService {
     public static let shared = AnalyticsSyncService()
@@ -37,26 +36,24 @@ public class AnalyticsSyncService {
                     Cognitive3DAnalyticsCore.shared.syncOfflineData()
                 }
             } else {
-                self.logger.info("Network is unavailable, will sync when connection returns")
+                self.logger.verbose("Network is unavailable, will sync when connection returns")
             }
         }
 
         // Mark initialization as complete immediately after setting up
         isInitializing = false
-        logger.info("Network monitoring started")
+        logger.verbose("local data cache & data sync: network monitoring started")
     }
 
     public func stopNetworkMonitoring() {
         if let token = networkMonitorToken {
             NetworkReachabilityMonitor.shared.removeConnectionStatusCallback(token: token)
             networkMonitorToken = nil
-            logger.info("Network monitoring stopped")
+            logger.verbose("local data cache & data sync: network monitoring stopped")
         }
     }
 
     public func triggerSync() async {
-        logger.info("DataCacheSystem sync triggered")
-
         // Implement the actual sync logic
         if let dataCacheSystem = Cognitive3DAnalyticsCore.shared.dataCacheSystem {
             await dataCacheSystem.uploadCachedContent()

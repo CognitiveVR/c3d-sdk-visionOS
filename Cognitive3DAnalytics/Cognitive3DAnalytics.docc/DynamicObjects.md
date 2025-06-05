@@ -5,18 +5,28 @@
    @PageImage(purpose: icon, source: C3D-logo.svg, alt: "Cognitive3D Analytics icon")
 }
 
-The Dynamic Object component allows you to track the position and state of GameObjects during the Participant's session. These can be used to track non player characters (NPC), and interactive objects.
+In visionOS & RealityKit, the class akin to a game object is the [`Entity`](https://developer.apple.com/documentation/realitykit/entity) class.
 
 More information is on the [Cognitvie 3D website](https://docs.cognitive3d.com/#read-the-docs).
 
 ## Using dynamic objects in the Swift C3D SDK
 
-To use dynamic objects, you will need to add 2 files into your project in Xcode; these modules are distributed with the C3D framework:
+To use dynamic objects, you will need to add 3 files into your project in Xcode; these modules are distributed with the C3D framework:
 
  * `DynamicObjectSystem.swift`
  * `DynamicComponent.swift`
+ * `ImmersiveView+DynamicObject.swift`
+ 
+The Dynamic Object component allows you to track the position and state of GameObjects during the Participant's session. These can be used to track non player characters (NPC), and interactive objects.
 
-The reason that they are not in the SDK is due to a limitation with Reality Composer Pro (RCP); at this time, the `DynamicComponent` module need to placed inside the Reality Composer Pro folder.
+The reason that some of the files are not in the SDK is due to a limitation with Reality Composer Pro (RCP); at this time, the `DynamicComponent` module need to placed inside the Reality Composer Pro folder.
+
+> Note: You may need to rename the class in the ImmersiveView extension to match the name of your immersive scene.
+
+```swift
+/// ImmersiveView extension for dynamic objects handling
+extension ImmersiveView {
+```
 
 ### Configuring the SDK
 
@@ -31,7 +41,7 @@ DynamicObjectSystem.registerSystem()
 ### Using the C3D with a `RealityView` & Reality Composer Pro
 
  * the following shows how dynamic objects could be registered in with a `RealityView`
- * the entities are added to a scene using RCP
+ * the entities are added to a `RealityView` using a RCP scene
 
 ```swift
 func configureDynamicObjects(rootEntity: Entity) {
@@ -61,10 +71,6 @@ func findEntitiesWithComponent<T: Component>(_ entity: Entity, componentType: T.
         // Check if the entity has the specified component
         if let component = currentEntity.components[componentType] {
             foundEntities.append((entity: currentEntity, component: component))
-            if isDebug {
-                print("\(indent)📦 \(currentEntity.name)")
-                print("\(indent)├── 🔧 \(componentType)")
-            }
         }
 
         // Recursively search children
@@ -165,7 +171,22 @@ struct ContentView: View {
 }
 ```
 
+### Hands as dynamic objects
 
+visionOS supports hand tracking and in the C3D SDK this is supported using dynamic objects.
+
+It requires hand tracking to be authorized by the user; the hand dynamic objects get created internal to the SDK.  Authorization requires adding a entry to the info plist for applications using the C3D SDK.
+
+```
+<key>NSHandsTrackingUsageDescription</key>
+<string>Hand tracking is required by the analytics SDK</string>
+```
+
+[Apple documentation](https://developer.apple.com/documentation/bundleresources/information-property-list/nshandstrackingusagedescription)
+
+When viewing a session in the scene viewer, the recorded data for the hand position and rotation will be played back visualized with hand meshes.
+
+Note: hand tracking is not available in the simulator; the relevant code in the SDK is conditionally compiled.
 
 ### Using dynamic objects with SwiftUI views
 

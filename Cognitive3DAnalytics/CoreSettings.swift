@@ -54,6 +54,8 @@ public class CoreSettings {
     /// Enable verbose network logging
     public var isNetworkLoggingVerbose: Bool = false
 
+    public var isHandTrackingRequired = false
+
     public init(
         defaultSceneName: String = "",
         allSceneData: [SceneData] = [],
@@ -66,7 +68,7 @@ public class CoreSettings {
         sensorDataLimit: Int = 64,
         dynamicDataLimit: Int = 64,
         gazeInterval: Double = 0.1,
-        dynamicObjectFileType: String = "GLTF",
+        dynamicObjectFileType: String = gltfFileType,
         fixationBatchSize: Int = 64,
         isOfflineSupportEnabled: Bool = true
     ) {

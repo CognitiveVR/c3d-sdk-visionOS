@@ -86,7 +86,7 @@ extension Cognitive3DAnalyticsCore {
         Task {
             if self.dataCacheSystem != nil {
                 await AnalyticsSyncService.shared.triggerSync()
-                self.logger?.info("Data sync triggered successfully")
+                self.logger?.verbose("Data sync triggered successfully")
             } else {
                 self.logger?.warning("Cannot sync data: DataCacheSystem not initialized")
             }

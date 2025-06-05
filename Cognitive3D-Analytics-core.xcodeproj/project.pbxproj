@@ -29,6 +29,8 @@
 		5491D3B72CDC4F4A00E2BF5D /* Cognitive3DAnalytics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5491D3AC2CDC4F4A00E2BF5D /* Cognitive3DAnalytics.framework */; };
 		78010DCD2D0D5E4A0089515E /* ARSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78010DCC2D0D5E4A0089515E /* ARSessionManager.swift */; };
 		78010DCE2D0D5E4A0089515E /* ARSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78010DCC2D0D5E4A0089515E /* ARSessionManager.swift */; };
+		7809C81D2DD5071C005578E2 /* HandTracking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7809C81C2DD5071C005578E2 /* HandTracking.swift */; };
+		7809C81E2DD5071C005578E2 /* HandTracking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7809C81C2DD5071C005578E2 /* HandTracking.swift */; };
 		780D2B1D2DB6EB9D0064B801 /* NetworkDataCacheDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 780D2B1C2DB6EB9D0064B801 /* NetworkDataCacheDelegate.swift */; };
 		780D2B1E2DB6EB9D0064B801 /* NetworkDataCacheDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 780D2B1C2DB6EB9D0064B801 /* NetworkDataCacheDelegate.swift */; };
 		780D4FF52D78D94F009839E3 /* SessionPropertiesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 780D4FF42D78D94F009839E3 /* SessionPropertiesTests.swift */; };
@@ -36,6 +38,8 @@
 		78121FDE2CFA407A0092A774 /* FreeformData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78121FDC2CFA407A0092A774 /* FreeformData.swift */; };
 		781E76A22D28FCAE00A11F84 /* ExitPollSurveyViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 781E76A12D28FCAE00A11F84 /* ExitPollSurveyViewModel.swift */; };
 		781E76A32D28FCAE00A11F84 /* ExitPollSurveyViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 781E76A12D28FCAE00A11F84 /* ExitPollSurveyViewModel.swift */; };
+		781E79492DD7FAAF008AE9F1 /* HandComponent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 781E79482DD7FAAF008AE9F1 /* HandComponent.swift */; };
+		781E794A2DD7FAAF008AE9F1 /* HandComponent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 781E79482DD7FAAF008AE9F1 /* HandComponent.swift */; };
 		782625E72DBC9C5B000C2E46 /* YawRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 782625E62DBC9C5B000C2E46 /* YawRecorder.swift */; };
 		782625E82DBC9C5B000C2E46 /* YawRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 782625E62DBC9C5B000C2E46 /* YawRecorder.swift */; };
 		7832FE202D288175005C7A63 /* ExitPollSurveyViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7832FE1F2D288175005C7A63 /* ExitPollSurveyViews.swift */; };
@@ -124,6 +128,8 @@
 		78BDA2A52DB9AD7C008E3A2E /* ExitPollSurveyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78BDA2A42DB9AD7C008E3A2E /* ExitPollSurveyTests.swift */; };
 		78BE04B72D77C48D00847821 /* DeviceProperties+Dictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78BE04B62D77C48500847821 /* DeviceProperties+Dictionary.swift */; };
 		78BE04B82D77C48D00847821 /* DeviceProperties+Dictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78BE04B62D77C48500847821 /* DeviceProperties+Dictionary.swift */; };
+		78C0A66D2DD27573005CD423 /* HmdHeight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78C0A66C2DD27573005CD423 /* HmdHeight.swift */; };
+		78C0A66E2DD27573005CD423 /* HmdHeight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78C0A66C2DD27573005CD423 /* HmdHeight.swift */; };
 		78C7B08F2D67A2A600290ECA /* SensorRecorderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78C7B08E2D67A2A600290ECA /* SensorRecorderTests.swift */; };
 		78C7B0902D67A2A600290ECA /* MockClasses.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78C7B08D2D67A2A600290ECA /* MockClasses.swift */; };
 		78D87F852D287742001C9138 /* ExitPollQuestionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D87F842D287742001C9138 /* ExitPollQuestionModels.swift */; };
@@ -178,10 +184,12 @@
 		5491D3B62CDC4F4A00E2BF5D /* c3d-swift-sdkTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "c3d-swift-sdkTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		78010DCC2D0D5E4A0089515E /* ARSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ARSessionManager.swift; sourceTree = "<group>"; };
 		780286882CFFB1C700CCD99D /* build_xcframework.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = build_xcframework.sh; sourceTree = "<group>"; };
+		7809C81C2DD5071C005578E2 /* HandTracking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandTracking.swift; sourceTree = "<group>"; };
 		780D2B1C2DB6EB9D0064B801 /* NetworkDataCacheDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkDataCacheDelegate.swift; sourceTree = "<group>"; };
 		780D4FF42D78D94F009839E3 /* SessionPropertiesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionPropertiesTests.swift; sourceTree = "<group>"; };
 		78121FDC2CFA407A0092A774 /* FreeformData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreeformData.swift; sourceTree = "<group>"; };
 		781E76A12D28FCAE00A11F84 /* ExitPollSurveyViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExitPollSurveyViewModel.swift; sourceTree = "<group>"; };
+		781E79482DD7FAAF008AE9F1 /* HandComponent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandComponent.swift; sourceTree = "<group>"; };
 		782625E62DBC9C5B000C2E46 /* YawRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YawRecorder.swift; sourceTree = "<group>"; };
 		7832FE1F2D288175005C7A63 /* ExitPollSurveyViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExitPollSurveyViews.swift; sourceTree = "<group>"; };
 		7836CF1C2DAA2B100041B6C8 /* TestNetworkClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestNetworkClient.swift; sourceTree = "<group>"; };
@@ -229,6 +237,7 @@
 		78B6B7BB2D7A1C1E00862FAF /* SurveyAudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurveyAudioRecorder.swift; sourceTree = "<group>"; };
 		78BDA2A42DB9AD7C008E3A2E /* ExitPollSurveyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExitPollSurveyTests.swift; sourceTree = "<group>"; };
 		78BE04B62D77C48500847821 /* DeviceProperties+Dictionary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DeviceProperties+Dictionary.swift"; sourceTree = "<group>"; };
+		78C0A66C2DD27573005CD423 /* HmdHeight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HmdHeight.swift; sourceTree = "<group>"; };
 		78C7B08D2D67A2A600290ECA /* MockClasses.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockClasses.swift; sourceTree = "<group>"; };
 		78C7B08E2D67A2A600290ECA /* SensorRecorderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorRecorderTests.swift; sourceTree = "<group>"; };
 		78D87F842D287742001C9138 /* ExitPollQuestionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExitPollQuestionModels.swift; sourceTree = "<group>"; };
@@ -271,6 +280,7 @@
 		542645172CF1715C008D49F2 /* Cognitive3DAnalytics */ = {
 			isa = PBXGroup;
 			children = (
+				7861ADE52DD6CC9400DC4183 /* HandTracking */,
 				78B264882DA9C645004A9B48 /* Cache */,
 				78F919C32DA7622500A4DE4F /* DynamicObjects */,
 				78AD93CA2D2864790017B87E /* Exit Poll Survey */,
@@ -297,6 +307,7 @@
 				7896F6FE2CFE9A370081DF5C /* GazeDataManager.swift */,
 				542645132CF1715C008D49F2 /* GazeRecorder.swift */,
 				788843452D696B3A00926E39 /* GazeSyncManager.swift */,
+				78C0A66C2DD27573005CD423 /* HmdHeight.swift */,
 				78ECC1912D01309D006B063F /* NetworkEnvironment.swift */,
 				78ECC18B2D01238E006B063F /* NetworkAPIClient.swift */,
 				780D2B1C2DB6EB9D0064B801 /* NetworkDataCacheDelegate.swift */,
@@ -362,6 +373,15 @@
 				78B6B7B82D7A1BF200862FAF /* VoiceQuestionView.swift */,
 			);
 			path = SwiftUI;
+			sourceTree = "<group>";
+		};
+		7861ADE52DD6CC9400DC4183 /* HandTracking */ = {
+			isa = PBXGroup;
+			children = (
+				7809C81C2DD5071C005578E2 /* HandTracking.swift */,
+				781E79482DD7FAAF008AE9F1 /* HandComponent.swift */,
+			);
+			path = HandTracking;
 			sourceTree = "<group>";
 		};
 		786A96A72CF656E400821DC2 /* Model */ = {
@@ -581,8 +601,10 @@
 				78B35E1B2D4D78B500AB5B84 /* DynamicDataManager.swift in Sources */,
 				78ECC1942D013102006B063F /* EventResponse.swift in Sources */,
 				542645212CF1715C008D49F2 /* ExitPollFullResponse.swift in Sources */,
+				78C0A66E2DD27573005CD423 /* HmdHeight.swift in Sources */,
 				786A96A92CF6576800821DC2 /* Event.swift in Sources */,
 				78B6B7B92D7A1BF200862FAF /* VoiceQuestionView.swift in Sources */,
+				7809C81E2DD5071C005578E2 /* HandTracking.swift in Sources */,
 				78B2648E2DA9C646004A9B48 /* DualFileCache.swift in Sources */,
 				78B264902DA9C646004A9B48 /* ExitPollCache.swift in Sources */,
 				78B264912DA9C646004A9B48 /* DataCacheSystem.swift in Sources */,
@@ -610,6 +632,7 @@
 				787258E92D84F387008A27C3 /* NetworkApiClient+Logging.swift in Sources */,
 				787258EA2D84F387008A27C3 /* NetworkRequestLogger.swift in Sources */,
 				788EA6862CF7DFFC00A4207A /* Gaze.swift in Sources */,
+				781E79492DD7FAAF008AE9F1 /* HandComponent.swift in Sources */,
 				7832FE202D288175005C7A63 /* ExitPollSurveyViews.swift in Sources */,
 				78552E272D0B855500B55CAA /* GazeResponse.swift in Sources */,
 				78F63D6A2D0CF44300CEFD09 /* CoordinateSystem.swift in Sources */,
@@ -653,6 +676,7 @@
 				7836CF1D2DAA2B100041B6C8 /* TestNetworkClient.swift in Sources */,
 				788EA6C42CF7FF7300A4207A /* MockURLSession.swift in Sources */,
 				542645322CF1715C008D49F2 /* ExitPollFullResponse.swift in Sources */,
+				78C0A66D2DD27573005CD423 /* HmdHeight.swift in Sources */,
 				78F919C62DA7622500A4DE4F /* ViewPositionModel.swift in Sources */,
 				787419EB2DC14FCE001B456D /* TestHelpers.swift in Sources */,
 				78F919C72DA7622500A4DE4F /* PositionTrackerView.swift in Sources */,
@@ -661,6 +685,7 @@
 				786A96AA2CF6576800821DC2 /* Event.swift in Sources */,
 				788EA6E12CF805FE00A4207A /* NetworkClientTests.swift in Sources */,
 				78746E8B2CFF9C7A00E265C2 /* DeviceProperties.swift in Sources */,
+				7809C81D2DD5071C005578E2 /* HandTracking.swift in Sources */,
 				78EF3AA02D12011C003F24BC /* CustomEvent.swift in Sources */,
 				7896F7002CFE9A370081DF5C /* GazeDataManager.swift in Sources */,
 				542645352CF1715C008D49F2 /* CoreSettings.swift in Sources */,
@@ -668,6 +693,7 @@
 				789698F32D026D470016F58B /* EventResponse.swift in Sources */,
 				78E6A4EF2D0E3B5B00AEED92 /* FrameRateRecorder.swift in Sources */,
 				78ECC18E2D012512006B063F /* TestUtilities.swift in Sources */,
+				781E794A2DD7FAAF008AE9F1 /* HandComponent.swift in Sources */,
 				789698F22D026D270016F58B /* NetworkAPIClient.swift in Sources */,
 				788EA6882CF7E00B00A4207A /* Sensor.swift in Sources */,
 				789707D92CF7962F0053B2B1 /* EventTests.swift in Sources */,
@@ -737,7 +763,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.9;
+				MARKETING_VERSION = 1.0.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
 				PRODUCT_BUNDLE_IDENTIFIER = "Cognitive3D.c3d-swift-sdk";
@@ -771,7 +797,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.9;
+				MARKETING_VERSION = 1.0.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
 				PRODUCT_BUNDLE_IDENTIFIER = "Cognitive3D.c3d-swift-sdk";

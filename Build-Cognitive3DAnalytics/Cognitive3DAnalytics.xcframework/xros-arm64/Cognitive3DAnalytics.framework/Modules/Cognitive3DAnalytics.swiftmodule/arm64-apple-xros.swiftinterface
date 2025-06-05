@@ -1,0 +1,1169 @@
+// swift-interface-format-version: 1.0
+// swift-compiler-version: Apple Swift version 6.1 effective-5.10 (swiftlang-6.1.0.110.21 clang-1700.0.13.3)
+// swift-module-flags: -target arm64-apple-xros2.0 -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -module-name Cognitive3DAnalytics
+// swift-module-flags-ignorable:  -interface-compiler-version 6.1
+import ARKit
+import AVFoundation
+import Combine
+import Foundation
+import Network
+import OSLog
+import ObjectiveC
+import Observation
+import QuartzCore
+import RealityKit
+import Swift
+import SwiftUI
+import UIKit
+import _Concurrency
+import _RealityKit_SwiftUI
+import _StringProcessing
+import _SwiftConcurrencyShims
+import simd
+public struct DeviceProperties : Swift.Codable {
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public class SensorRecorder {
+  public var filteringEnabled: Swift.Bool
+  public init(cog: Cognitive3DAnalytics.Cognitive3DAnalyticsCore, sceneData: Cognitive3DAnalytics.SceneData)
+  @objc deinit
+  @discardableResult
+  public func recordDataPoint(name: Swift.String, value: Swift.Double) -> Swift.Bool
+  public func endSession() async
+}
+@_hasMissingDesignatedInitializers @_Concurrency.MainActor public class AnalyticsSyncService {
+  @_Concurrency.MainActor public static let shared: Cognitive3DAnalytics.AnalyticsSyncService
+  @_Concurrency.MainActor public func startNetworkMonitoring()
+  @_Concurrency.MainActor public func stopNetworkMonitoring()
+  @_Concurrency.MainActor public func triggerSync() async
+  @objc deinit
+}
+public enum ExitPollSurveyError : Swift.Error {
+  case networkError(Swift.String)
+  case invalidResponse
+  case noQuestionsRetrieved
+  public var localizedDescription: Swift.String {
+    get
+  }
+}
+public class ExitPollSurveyViewModel : Combine.ObservableObject {
+  @Combine.Published @_projectedValueProperty($errorMessage) public var errorMessage: Swift.String? {
+    get
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    set
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    _modify
+  }
+  public var $errorMessage: Combine.Published<Swift.String?>.Publisher {
+    get
+    @available(iOS 14.0, tvOS 14.0, watchOS 7.0, macOS 11.0, *)
+    set
+  }
+  @Combine.Published @_projectedValueProperty($surveyQuestions) public var surveyQuestions: [Cognitive3DAnalytics.Question] {
+    get
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    set
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    _modify
+  }
+  public var $surveyQuestions: Combine.Published<[Cognitive3DAnalytics.Question]>.Publisher {
+    get
+    @available(iOS 14.0, tvOS 14.0, watchOS 7.0, macOS 11.0, *)
+    set
+  }
+  public var microphoneResponses: [Swift.Int : Swift.String] {
+    get
+    set
+  }
+  @Combine.Published @_projectedValueProperty($hook) public var hook: Swift.String {
+    get
+  }
+  public var $hook: Combine.Published<Swift.String>.Publisher {
+    get
+  }
+  public var title: Swift.String
+  public var questionSetName: Swift.String
+  public var questionSetId: Swift.String
+  public var questionSetVersion: Swift.Int
+  public var versionId: Swift.Int
+  public var time: Foundation.Date?
+  public init()
+  public func fetchSurvey(hook: Swift.String) async -> Swift.Result<Swift.Void, Cognitive3DAnalytics.ExitPollSurveyError>
+  public func sendSurveyAnswers() async -> Swift.Result<Swift.Void, any Swift.Error>
+  public func skipQuestion(at index: Swift.Int)
+  public func generatePrettyJSON(hook: Swift.String, sceneId: Swift.String, questionSetVersion: Swift.Int) -> Swift.String
+  public typealias ObjectWillChangePublisher = Combine.ObservableObjectPublisher
+  @objc deinit
+}
+@_hasMissingDesignatedInitializers public class Utils {
+  public static func prettyPrintJSON(_ data: Any) -> Swift.String
+  public static func prettyPrintPosition(_ position: [Swift.Double]) -> Swift.String
+  @objc deinit
+}
+public func getAppDisplayName() -> Swift.String
+public func findEntitiesWithComponent<T>(_ entity: RealityFoundation.Entity, componentType: T.Type) -> [(entity: RealityFoundation.Entity, component: T)] where T : RealityFoundation.Component
+extension RealityFoundation.Entity {
+  @_Concurrency.MainActor @preconcurrency public func firstModelEntity() -> RealityFoundation.Entity?
+}
+public class SceneData : Swift.Codable {
+  public init(sceneName: Swift.String, sceneId: Swift.String, versionNumber: Swift.Int, versionId: Swift.Int)
+  public var sceneName: Swift.String
+  public var sceneId: Swift.String
+  public var versionNumber: Swift.Int
+  public var versionId: Swift.Int
+  @objc deinit
+  public func encode(to encoder: any Swift.Encoder) throws
+  required public init(from decoder: any Swift.Decoder) throws
+}
+public struct SceneManifest : Swift.Codable {
+  public var createdAt: Foundation.TimeInterval
+  public var updatedAt: Foundation.TimeInterval
+  public var id: Swift.String
+  public var versions: [Cognitive3DAnalytics.SceneVersion]
+  public var projectId: Swift.Int
+  public var customerId: Swift.Int?
+  public var sceneName: Swift.String
+  public var isPublic: Swift.Bool
+  public var hidden: Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct SceneVersion : Swift.Codable {
+  public var createdAt: Foundation.TimeInterval
+  public var updatedAt: Foundation.TimeInterval
+  public var id: Swift.Int
+  public var sceneId: Swift.String
+  public var versionNumber: Swift.Int
+  public var scale: Swift.Double
+  public var sdkVersion: Swift.String
+  public var sceneFileType: Swift.String
+  public var hasFixations: Swift.Bool
+  public var isOptimized: Swift.Bool?
+  public var dynamicsUpdateKey: Swift.String?
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+extension Cognitive3DAnalytics.Cognitive3DAnalyticsCore {
+  public func setupConnectivitySupport()
+  public func isNetworkConnected() -> Swift.Bool
+  public func getNetworkConnectionType() -> Swift.String
+  public func syncOfflineData()
+  public func sendDataWithConnectivityCheck() async
+  public func cleanupConnectivitySupport()
+}
+public struct Sensor : Swift.Codable {
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public enum GazeRecorderError : Swift.Error {
+  case noDataAvailable
+  case sendFailed
+  public static func == (a: Cognitive3DAnalytics.GazeRecorderError, b: Cognitive3DAnalytics.GazeRecorderError) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public protocol GazeRecorderDelegate : AnyObject {
+  func gazeTrackerDidUpdate(_ data: Cognitive3DAnalytics.GazeEventData)
+}
+public class GazeRecorder {
+  weak public var delegate: (any Cognitive3DAnalytics.GazeRecorderDelegate)? {
+    get
+    set
+    _modify
+  }
+  public init(core: Cognitive3DAnalytics.Cognitive3DAnalyticsCore)
+  @objc deinit
+  public func startTracking() async
+  public func sendData() async throws -> [Swift.String : Any]
+  public func sendMandatoryData() async throws -> [Swift.String : Any]
+  public func stopTracking()
+  public func endSession()
+}
+extension Cognitive3DAnalytics.GazeRecorder : Observation.Observable {
+}
+public enum ExitPollAnswerType : Swift.String, Swift.Codable {
+  case null
+  case string
+  case number
+  case boolean
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
+public class ExitPollAnswer : Swift.Codable {
+  public init(answerValueType: Cognitive3DAnalytics.ExitPollAnswerType = .null, stringValue: Swift.String = "", numberValue: Swift.Int = 0, boolValue: Swift.Bool = false)
+  convenience public init(type: Swift.String, value: Any)
+  public func encode(to encoder: any Swift.Encoder) throws
+  required public init(from decoder: any Swift.Decoder) throws
+  @objc deinit
+}
+public class BatteryLevelRecorder {
+  public init(sensorRecorder: Cognitive3DAnalytics.SensorRecorder)
+  @objc deinit
+}
+@_Concurrency.MainActor @preconcurrency public struct MultipleChoiceQuestionView : SwiftUICore.View {
+  @SwiftUICore.Binding @_projectedValueProperty($selectedAnswer) @_Concurrency.MainActor @preconcurrency public var selectedAnswer: Swift.String? {
+    get
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    nonmutating set
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    nonmutating _modify
+  }
+  @_Concurrency.MainActor @preconcurrency public var $selectedAnswer: SwiftUICore.Binding<Swift.String?> {
+    get
+  }
+  @_Concurrency.MainActor @preconcurrency public let title: Swift.String
+  @_Concurrency.MainActor @preconcurrency public let answers: [Swift.String]
+  @_Concurrency.MainActor @preconcurrency public init(selectedAnswer: SwiftUICore.Binding<Swift.String?>, title: Swift.String, answers: [Swift.String])
+  @_Concurrency.MainActor @preconcurrency public var body: some SwiftUICore.View {
+    get
+  }
+  public typealias Body = @_opaqueReturnTypeOf("$s20Cognitive3DAnalytics26MultipleChoiceQuestionViewV4bodyQrvp", 0) __
+}
+
+
+
+public protocol GazeSyncDelegate : AnyObject {
+  nonisolated func onGazeTick() async
+}
+@_hasMissingDesignatedInitializers public class GazeSyncManager {
+  public func addDelegate(_ delegate: any Cognitive3DAnalytics.GazeSyncDelegate)
+  public func removeDelegate(_ delegate: any Cognitive3DAnalytics.GazeSyncDelegate)
+  public func notifyGazeTick() async
+  @objc deinit
+}
+public struct DynamicObjectConfig {
+  public init(dynamicId: Swift.String, name: Swift.String, mesh: Swift.String, syncWithGaze: Swift.Bool = true, updateRate: Swift.Float = 0.1, positionThreshold: Swift.Float = 0.01, rotationThreshold: Swift.Float = 0.1, scaleThreshold: Swift.Float = 0.1)
+}
+@_hasMissingDesignatedInitializers public class ScenePhaseManager : Combine.ObservableObject {
+  public static let shared: Cognitive3DAnalytics.ScenePhaseManager
+  @Combine.Published @_projectedValueProperty($currentScenePhase) public var currentScenePhase: SwiftUI.ScenePhase {
+    get
+  }
+  public var $currentScenePhase: Combine.Published<SwiftUI.ScenePhase>.Publisher {
+    get
+  }
+  public init(scenePhase: SwiftUI.ScenePhase)
+  public func updateScenePhase(_ newPhase: SwiftUI.ScenePhase)
+  public typealias ObjectWillChangePublisher = Combine.ObservableObjectPublisher
+  @objc deinit
+}
+@_Concurrency.MainActor @preconcurrency public struct ScenePhaseObserverModifier : SwiftUICore.ViewModifier {
+  @_Concurrency.MainActor @preconcurrency public func body(content: Cognitive3DAnalytics.ScenePhaseObserverModifier.Content) -> some SwiftUICore.View
+  
+  public typealias Body = @_opaqueReturnTypeOf("$s20Cognitive3DAnalytics26ScenePhaseObserverModifierV4body7contentQr7SwiftUI05_ViewF8_ContentVyACG_tF", 0) __
+}
+extension SwiftUICore.View {
+  @_Concurrency.MainActor @preconcurrency public func observeCognitive3DScenePhase() -> some SwiftUICore.View
+  
+}
+public let gltfFileType: Swift.String
+public let visonProHmdType: Swift.String
+public let analyticsFormatVersion1: Swift.String
+@_hasMissingDesignatedInitializers public class Config {
+  public var raycastLength: Swift.Float
+  public var shouldEndSessionOnIdle: Swift.Bool
+  public var idleThreshold: Swift.Double
+  public var shouldSendDataOnInactive: Swift.Bool
+  public var shouldEndSessionOnBackground: Swift.Bool
+  public var useSyncServices: Swift.Bool
+  public var isHandTrackingRequired: Swift.Bool
+  @objc deinit
+}
+extension Cognitive3DAnalytics.DeviceProperties {
+  public func toDictionary() -> [Swift.String : Any]
+  public static func fromDictionary(_ dict: [Swift.String : Any]) -> Cognitive3DAnalytics.DeviceProperties?
+}
+public class ExitPollQuestion {
+  final public let title: Swift.String
+  final public let saveToSession: Swift.Bool
+  public init(title: Swift.String, saveToSession: Swift.Bool)
+  @objc deinit
+}
+public class BooleanQuestion : Cognitive3DAnalytics.ExitPollQuestion {
+  final public let presentationType: Cognitive3DAnalytics.BooleanPresentationType
+  public init(title: Swift.String, saveToSession: Swift.Bool, presentationType: Cognitive3DAnalytics.BooleanPresentationType)
+  @objc deinit
+}
+public enum BooleanPresentationType {
+  case toggle
+  case radioButtons
+  case checkbox
+  public static func == (a: Cognitive3DAnalytics.BooleanPresentationType, b: Cognitive3DAnalytics.BooleanPresentationType) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+@_inheritsConvenienceInitializers public class HappySadQuestion : Cognitive3DAnalytics.ExitPollQuestion {
+  override public init(title: Swift.String, saveToSession: Swift.Bool)
+  @objc deinit
+}
+@_inheritsConvenienceInitializers public class ThumbsQuestion : Cognitive3DAnalytics.ExitPollQuestion {
+  override public init(title: Swift.String, saveToSession: Swift.Bool)
+  @objc deinit
+}
+public class MultipleChoiceQuestion : Cognitive3DAnalytics.ExitPollQuestion {
+  final public let answers: [Swift.String]
+  public init(title: Swift.String, saveToSession: Swift.Bool, answers: [Swift.String])
+  public func isValidAnswer(_ answer: Swift.String) -> Swift.Bool
+  @objc deinit
+}
+public class ScaleQuestion : Cognitive3DAnalytics.ExitPollQuestion {
+  final public let min: Swift.Int
+  final public let max: Swift.Int
+  final public let minLabel: Swift.String
+  final public let maxLabel: Swift.String
+  public init(title: Swift.String, saveToSession: Swift.Bool, min: Swift.Int, max: Swift.Int, minLabel: Swift.String, maxLabel: Swift.String)
+  public func isValidValue(_ value: Swift.Int) -> Swift.Bool
+  @objc deinit
+}
+public class VoiceQuestion : Cognitive3DAnalytics.ExitPollQuestion {
+  final public let maxResponseLength: Swift.Int
+  public init(title: Swift.String, saveToSession: Swift.Bool, maxResponseLength: Swift.Int)
+  @objc deinit
+}
+public struct DynamicObjectSettings {
+  public let updateInterval: Swift.Float
+  public let positionThreshold: Swift.Float
+  public let rotationThreshold: Swift.Float
+  public let scaleThreshold: Swift.Float
+  public init(updateInterval: Swift.Float = 0.1, positionThreshold: Swift.Float = 0.01, rotationThreshold: Swift.Float = 1.0, scaleThreshold: Swift.Float = 0.01)
+}
+public actor DynamicDataManager {
+  public var shouldSendManifestsOnChange: Swift.Bool
+  public init(core: Cognitive3DAnalytics.Cognitive3DAnalyticsCore)
+  public func updateSettings(_ newSettings: Cognitive3DAnalytics.DynamicObjectSettings)
+  public func registerDynamicObject(id: Swift.String, name: Swift.String, mesh: Swift.String, fileType: Swift.String = gltfFileType) async
+  public func registerHand(id: Swift.String, isRightHand: Swift.Bool = true) async
+  public func removeDynamicObject(id: Swift.String) async
+  public func updateScene(sceneId: Swift.String, version: Swift.Int) async
+  public func recordDynamicObject(id: Swift.String, position: Swift.SIMD3<Swift.Float>, rotation: simd.simd_quatf, scale: Swift.SIMD3<Swift.Float>, positionThreshold: Swift.Float, rotationThreshold: Swift.Float, scaleThreshold: Swift.Float, updateRate: Swift.Float, properties: [[Swift.String : Cognitive3DAnalytics.AnyCodable]]? = nil) async
+  public func sendData() async
+  public func getObjectState(id: Swift.String) async -> (position: Swift.SIMD3<Swift.Float>, rotation: simd.simd_quatf)?
+  public func getGazeSyncInfo(id: Swift.String) async -> (totalSyncs: Swift.Int, isEnabled: Swift.Bool)
+  public func beginEngagement(objectId: Swift.String, engagementName: Swift.String) async
+  public func beginEngagement(objectId: Swift.String, engagementName: Swift.String, uniqueEngagementId: Swift.String) async
+  public func beginEngagement(objectId: Swift.String, engagementName: Swift.String, uniqueEngagementId: Swift.String, properties: [Swift.String : Any]?) async
+  public func endEngagement(objectId: Swift.String, engagementName: Swift.String) async
+  public func endEngagement(objectId: Swift.String, engagementName: Swift.String, uniqueEngagementId: Swift.String) async
+  public func endEngagement(objectId: Swift.String, engagementName: Swift.String, uniqueEngagementId: Swift.String, properties: [Swift.String : Any]?) async
+  @objc deinit
+  @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+  @_semantics("defaultActor") nonisolated final public var unownedExecutor: _Concurrency.UnownedSerialExecutor {
+    get
+  }
+}
+public struct ExitPollFullResponse : Swift.Codable {
+  public let userId: Swift.String
+  public let questionSetId: Swift.String
+  public let sessionId: Swift.String
+  public let hook: Swift.String
+  public let sceneId: Swift.String
+  public let versionNumber: Swift.Int
+  public let versionId: Swift.Int
+  public let answers: [Cognitive3DAnalytics.ExitPollAnswer]
+  public init(userId: Swift.String, questionSetId: Swift.String, sessionId: Swift.String, hook: Swift.String, sceneId: Swift.String, versionNumber: Swift.Int, versionId: Swift.Int, answers: [Cognitive3DAnalytics.ExitPollAnswer])
+  public func toJSON() -> [Swift.String : Any]
+  public func toPrettyPrintedJSON() -> Swift.String
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+@objc @_inheritsConvenienceInitializers @_hasMissingDesignatedInitializers public class HmdHeight : ObjectiveC.NSObject, Cognitive3DAnalytics.ARSessionDelegate {
+  public static let shared: Cognitive3DAnalytics.HmdHeight
+  @objc public func arSessionDidUpdatePosition(_ position: [Swift.Double])
+  public func medianHeightSample() -> Swift.Double?
+  public func estimateUserHeight() -> Swift.Double?
+  public func clearHeightSamples()
+  public func heightInCentimeters() -> Swift.Double?
+  public func recordAndSendMedian()
+  public func sessionDidStart(sessionId: Swift.String)
+  public func sessionDidEnd(sessionId: Swift.String, sessionState: Cognitive3DAnalytics.SessionState)
+  @objc deinit
+}
+public struct Event : Swift.Codable {
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+@_Concurrency.MainActor @preconcurrency public struct VoiceQuestionView : SwiftUICore.View {
+  @SwiftUICore.Binding @_projectedValueProperty($isConfirmButtonEnabled) @_Concurrency.MainActor @preconcurrency public var isConfirmButtonEnabled: Swift.Bool {
+    get
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    nonmutating set
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    nonmutating _modify
+  }
+  @_Concurrency.MainActor @preconcurrency public var $isConfirmButtonEnabled: SwiftUICore.Binding<Swift.Bool> {
+    get
+  }
+  @_Concurrency.MainActor @preconcurrency public let questionIndex: Swift.Int
+  @_Concurrency.MainActor @preconcurrency public let title: Swift.String
+  @_Concurrency.MainActor @preconcurrency public init(isConfirmButtonEnabled: SwiftUICore.Binding<Swift.Bool>, questionIndex: Swift.Int, title: Swift.String, recordingTimeLimit: Foundation.TimeInterval = 10.0)
+  @_Concurrency.MainActor @preconcurrency public var body: some SwiftUICore.View {
+    get
+  }
+  public typealias Body = @_opaqueReturnTypeOf("$s20Cognitive3DAnalytics17VoiceQuestionViewV4bodyQrvp", 0) __
+}
+@objc @_inheritsConvenienceInitializers @_hasMissingDesignatedInitializers public class HandTracking : ObjectiveC.NSObject {
+  public static let shared: Cognitive3DAnalytics.HandTracking
+  public static var leftHandId: Swift.String
+  public static var rightHandId: Swift.String
+  public static var rootEntity: RealityFoundation.Entity? {
+    get
+    set
+  }
+  public static func setup(core: Cognitive3DAnalytics.Cognitive3DAnalyticsCore)
+  @_Concurrency.MainActor public static func runSession() async
+  public func sessionDidStart(sessionId: Swift.String)
+  public func sessionDidEnd(sessionId: Swift.String, sessionState: Cognitive3DAnalytics.SessionState)
+  @objc deinit
+}
+public enum DualFileCacheError : Swift.Error {
+  case directoryCreationFailed
+  case fileCreationFailed
+  case fileHandleCreationFailed
+  public static func == (a: Cognitive3DAnalytics.DualFileCacheError, b: Cognitive3DAnalytics.DualFileCacheError) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+@_hasMissingDesignatedInitializers public class DualFileCache : Cognitive3DAnalytics.CacheProtocol {
+  public func numberOfBatches() -> Swift.Int
+  public func hasContent() -> Swift.Bool
+  public func peekContent(destination: inout Swift.String, body: inout Swift.String) -> Swift.Bool
+  public func writeContent(destination: Swift.String, body: Swift.String) -> Swift.Bool
+  public func writeContent(_ content: Swift.String) -> Swift.Bool
+  public func popContent()
+  public func close()
+  public func canWrite(destination: Swift.String, body: Swift.String) -> Swift.Bool
+  public func canWrite(_ content: Swift.String) -> Swift.Bool
+  public func getCacheFillAmount() -> Swift.Float
+  @objc deinit
+}
+public enum DataCacheSystemError : Swift.Error {
+  case failedToCreateCache
+  case invalidCachePath
+  public static func == (a: Cognitive3DAnalytics.DataCacheSystemError, b: Cognitive3DAnalytics.DataCacheSystemError) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public protocol CacheProtocol {
+  func numberOfBatches() -> Swift.Int
+  func hasContent() -> Swift.Bool
+  func peekContent(destination: inout Swift.String, body: inout Swift.String) -> Swift.Bool
+  func writeContent(destination: Swift.String, body: Swift.String) -> Swift.Bool
+  func writeContent(_ content: Swift.String) -> Swift.Bool
+  func popContent()
+  func close()
+  func canWrite(destination: Swift.String, body: Swift.String) -> Swift.Bool
+  func canWrite(_ content: Swift.String) -> Swift.Bool
+  func getCacheFillAmount() -> Swift.Float
+}
+public actor DataCacheSystem {
+  public var cache: Cognitive3DAnalytics.DualFileCache?
+  public init()
+  public func setShouldAttemptUpload(_ value: Swift.Bool)
+  public func setShouldAttemptMidSessionUpload(_ value: Swift.Bool)
+  public func getShouldAttemptMidSessionUpload() -> Swift.Bool
+  public func getShouldAttemptUpload() -> Swift.Bool
+  public func setCachePath(_ path: Swift.String) throws
+  public func handleRequest(url: Foundation.URL, body: Foundation.Data) async -> Swift.Bool
+  public func sendAndCacheRequest(url: Foundation.URL, body: Foundation.Data) async
+  public func uploadCachedContent() async
+  public func sendExitPollAnswers(questionSetName: Swift.String, version: Swift.Int, pollData: Foundation.Data) async -> Swift.Bool
+  @objc deinit
+  @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+  @_semantics("defaultActor") nonisolated final public var unownedExecutor: _Concurrency.UnownedSerialExecutor {
+    get
+  }
+}
+@_hasMissingDesignatedInitializers public class ViewPositionModel {
+  public var lastUpdateTime: Foundation.Date {
+    get
+    set
+    _modify
+  }
+  public var debugInfo: Swift.String {
+    get
+    set
+    _modify
+  }
+  public var transform: Spatial.AffineTransform3D? {
+    get
+    set
+    _modify
+  }
+  public var position: Swift.SIMD3<Swift.Float> {
+    get
+    set
+    _modify
+  }
+  public var size: Swift.SIMD3<Swift.Float> {
+    get
+    set
+    _modify
+  }
+  public func applyTransformsToEntity(_ entity: RealityFoundation.ModelEntity, using metricsConverter: SwiftUI.PhysicalMetricsConverter, geometry: SwiftUI.GeometryProxy3D?, useOffset: Swift.Bool = true)
+  public func applyPosition(to entity: RealityFoundation.ModelEntity, using metricsConverter: SwiftUI.PhysicalMetricsConverter, useOffset: Swift.Bool = true)
+  public func applyScale(to entity: RealityFoundation.ModelEntity, using metricsConverter: SwiftUI.PhysicalMetricsConverter, geometry: SwiftUI.GeometryProxy3D?)
+  public func applyRotation(to entity: RealityFoundation.ModelEntity)
+  @objc deinit
+}
+extension Cognitive3DAnalytics.ViewPositionModel : Observation.Observable {
+}
+public enum ViewDisplayMode {
+  case debug
+  case minimal
+  case hidden
+  public static func == (a: Cognitive3DAnalytics.ViewDisplayMode, b: Cognitive3DAnalytics.ViewDisplayMode) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+@_Concurrency.MainActor @preconcurrency public struct PositionTrackerView : SwiftUICore.View {
+  @_Concurrency.MainActor @preconcurrency public var displayMode: Cognitive3DAnalytics.ViewDisplayMode
+  @_Concurrency.MainActor @preconcurrency public var isVerboseDebug: Swift.Bool
+  @_Concurrency.MainActor @preconcurrency public var dynamicId: Swift.String
+  @_Concurrency.MainActor @preconcurrency public init(dynamicId: Swift.String, displayMode: Cognitive3DAnalytics.ViewDisplayMode = .hidden)
+  @_Concurrency.MainActor @preconcurrency public var body: some SwiftUICore.View {
+    get
+  }
+  public typealias Body = @_opaqueReturnTypeOf("$s20Cognitive3DAnalytics19PositionTrackerViewV4bodyQrvp", 0) __
+}
+
+
+
+public class EventRecorder {
+  public init(cog: Cognitive3DAnalytics.Cognitive3DAnalyticsCore, sceneData: Cognitive3DAnalytics.SceneData, batchSize: Swift.Int = 10)
+  @discardableResult
+  public func recordEvent(name: Swift.String, position: [Swift.Double], properties: [Swift.String : Any], immediate: Swift.Bool, bypassActiveCheck: Swift.Bool = false) -> Swift.Bool
+  @discardableResult
+  public func recordDynamicEvent(name: Swift.String, position: [Swift.Double], properties: [Swift.String : Any], dynamicObjectId: Swift.String, immediate: Swift.Bool) -> Swift.Bool
+  @discardableResult
+  public func sendAllPendingEvents() -> Swift.Bool
+  @discardableResult
+  public func sendDataBeforeSceneChange() -> Swift.Bool
+  @objc deinit
+}
+public class ExitPollSurvey {
+  public init(core: Cognitive3DAnalytics.Cognitive3DAnalyticsCore)
+  public func fetchExitPollQuestions(hook: Swift.String) async -> Swift.Result<Cognitive3DAnalytics.ExitPollResponse, Cognitive3DAnalytics.APIError>
+  public func cacheExitPollResponsesToSendLater(responseData: Foundation.Data, questionSetName: Swift.String, questionSetVersion: Swift.Int, eventProperties: [Swift.String : Any]) async -> Swift.Result<Swift.Void, any Swift.Error>
+  @objc deinit
+}
+extension Cognitive3DAnalytics.DynamicDataManager : Cognitive3DAnalytics.GazeSyncDelegate {
+  public func setSyncWithGaze(id: Swift.String, enabled: Swift.Bool)
+  public func isSyncedWithGaze(id: Swift.String) -> Swift.Bool
+  public func onGazeTick() async
+}
+public let noAnswerSet: Swift.Int
+public enum QuestionType : Swift.String, Swift.Codable {
+  case boolean
+  case happySad
+  case thumbs
+  case multiple
+  case scale
+  case voice
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
+public struct ExitPollResponse : Swift.Codable {
+  public let id: Swift.String
+  public let projectId: Swift.Int
+  public let name: Swift.String
+  public let customerId: Swift.String
+  public let status: Swift.String
+  public let title: Swift.String
+  public let questionSetVersion: Swift.Int
+  public let questions: [Cognitive3DAnalytics.Question]
+  public init(id: Swift.String, projectId: Swift.Int, name: Swift.String, customerId: Swift.String, status: Swift.String, title: Swift.String, version: Swift.Int, questions: [Cognitive3DAnalytics.Question])
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct Question : Swift.Codable {
+  public let type: Cognitive3DAnalytics.QuestionType
+  public let saveToSession: Swift.Bool
+  public let propertyLabel: Swift.String?
+  public let title: Swift.String
+  public let answers: [Cognitive3DAnalytics.Answer]?
+  public let minLabel: Swift.String?
+  public let maxLabel: Swift.String?
+  public let range: Cognitive3DAnalytics.Range?
+  public let maxResponseLength: Swift.Int?
+  public var answer: Swift.Int
+  public init(type: Cognitive3DAnalytics.QuestionType, saveToSession: Swift.Bool, propertyLabel: Swift.String?, title: Swift.String, answers: [Cognitive3DAnalytics.Answer]?, minLabel: Swift.String?, maxLabel: Swift.String?, range: Cognitive3DAnalytics.Range?, maxResponseLength: Swift.Int?, answer: Swift.Int = noAnswerSet)
+  public init(from decoder: any Swift.Decoder) throws
+  public func encode(to encoder: any Swift.Encoder) throws
+}
+public struct Answer : Swift.Codable {
+  public let icon: Swift.String?
+  public let answer: Swift.String
+  public init(icon: Swift.String?, answer: Swift.String)
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct Range : Swift.Codable {
+  public let start: Swift.Int
+  public let end: Swift.Int
+  public init(start: Swift.Int, end: Swift.Int)
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct AnyCodable : Swift.Codable {
+  public let value: Any
+  public init<T>(_ value: T?)
+  public init(from decoder: any Swift.Decoder) throws
+  public func encode(to encoder: any Swift.Encoder) throws
+}
+extension Cognitive3DAnalytics.Question {
+  public var answerString: Swift.String? {
+    get
+    set
+  }
+}
+public enum APIError : Swift.Error {
+  case invalidURL
+  case networkError(any Swift.Error)
+  case invalidResponse
+  case decodingError(any Swift.Error)
+  case encodingError(any Swift.Error)
+  case unauthorized
+  case forbidden
+  case notFound
+  case serverError(Swift.Int)
+}
+public struct NetworkLoggingConfig {
+  public var isEnabled: Swift.Bool
+  public var maxRecords: Swift.Int
+  public var isVerboseLogging: Swift.Bool
+  public init(isEnabled: Swift.Bool = false, maxRecords: Swift.Int = 100, isVerboseLogging: Swift.Bool = false)
+}
+@_hasMissingDesignatedInitializers public class CustomEvent {
+  public init(name: Swift.String, dynamicObjectId: Swift.String? = nil, core: Cognitive3DAnalytics.Cognitive3DAnalyticsCore)
+  public init(name: Swift.String, properties: [Swift.String : Any], dynamicObjectId: Swift.String? = nil, core: Cognitive3DAnalytics.Cognitive3DAnalyticsCore)
+  @discardableResult
+  public func setPosition(_ position: [Swift.Double]) -> Cognitive3DAnalytics.CustomEvent
+  @discardableResult
+  public func setDynamicObject(_ objectId: Swift.String) -> Cognitive3DAnalytics.CustomEvent
+  @discardableResult
+  public func setProperties(_ properties: [Swift.String : Any]) -> Cognitive3DAnalytics.CustomEvent
+  @discardableResult
+  public func setProperty(key: Swift.String, value: Any) -> Cognitive3DAnalytics.CustomEvent
+  @discardableResult
+  public func sendWithHighPriority(_ position: [Swift.Double]? = nil) -> Swift.Bool
+  @discardableResult
+  public func send(_ position: [Swift.Double]? = nil) -> Swift.Bool
+  @available(*, deprecated, message: "Use sendWithHighPriority instead for important events or send() for standard events")
+  @discardableResult
+  public func sendImmediate(_ position: [Swift.Double]? = nil) -> Swift.Bool
+  @objc deinit
+}
+public class CoreSettings {
+  public var defaultSceneName: Swift.String
+  public var allSceneData: [Cognitive3DAnalytics.SceneData]
+  public var apiKey: Swift.String
+  public var loggingLevel: Cognitive3DAnalytics.LogLevel
+  public var isDebugVerbose: Swift.Bool
+  public var hmdType: Swift.String
+  public var gazeBatchSize: Swift.Int
+  public var customEventBatchSize: Swift.Int
+  public var sensorDataLimit: Swift.Int
+  public var dynamicDataLimit: Swift.Int
+  public var gazeInterval: Swift.Double
+  public var dynamicObjectFileType: Swift.String
+  public var fixationBatchSize: Swift.Int
+  public var isOfflineSupportEnabled: Swift.Bool
+  public var isNetworkLoggingEnabled: Swift.Bool
+  public var networkLogMaxRecords: Swift.Int
+  public var isNetworkLoggingVerbose: Swift.Bool
+  public var isHandTrackingRequired: Swift.Bool
+  public init(defaultSceneName: Swift.String = "", allSceneData: [Cognitive3DAnalytics.SceneData] = [], apiKey: Swift.String = "", loggingLevel: Cognitive3DAnalytics.LogLevel = .all, isDebugVerbose: Swift.Bool = false, hmdType: Swift.String = "", gazeBatchSize: Swift.Int = 64, customEventBatchSize: Swift.Int = 64, sensorDataLimit: Swift.Int = 64, dynamicDataLimit: Swift.Int = 64, gazeInterval: Swift.Double = 0.1, dynamicObjectFileType: Swift.String = gltfFileType, fixationBatchSize: Swift.Int = 64, isOfflineSupportEnabled: Swift.Bool = true)
+  @objc deinit
+}
+@_hasMissingDesignatedInitializers public class GazeDataManager {
+  @objc deinit
+}
+extension Cognitive3DAnalytics.GazeDataManager : Observation.Observable {
+}
+public class YawRecorder : Cognitive3DAnalytics.ARSessionDelegate {
+  public init(sensorRecorder: Cognitive3DAnalytics.SensorRecorder, updateInterval: Foundation.TimeInterval = 1.0)
+  @objc deinit
+  public func startTracking()
+  public func endSession()
+  public func stop()
+  @objc public func arSessionDidUpdateTransform(_ transform: simd.simd_float4x4)
+}
+extension Foundation.NSNotification.Name {
+  public static let idleStateChanged: Foundation.Notification.Name
+}
+public class IdleDetector : Cognitive3DAnalytics.ARSessionDelegate {
+  public var isIdle: Swift.Bool {
+    get
+  }
+  public init(positionThreshold: Swift.Double = 0.01, rotationThreshold: Swift.Double = 0.017, idleThreshold: Foundation.TimeInterval = 60.0)
+  @objc deinit
+  @objc public func arSessionDidUpdatePosition(_ position: [Swift.Double])
+  @objc public func arSessionDidUpdateTransform(_ transform: simd.simd_float4x4)
+  public func getTimeSinceLastActivity() -> Foundation.TimeInterval
+  public func resetIdleTimer()
+}
+extension Cognitive3DAnalytics.IdleDetector : Observation.Observable {
+}
+extension Cognitive3DAnalytics.Cognitive3DAnalyticsCore {
+  public var isUserIdle: Swift.Bool {
+    get
+  }
+  public var timeSinceLastActivity: Foundation.TimeInterval {
+    get
+  }
+  public func resetIdleTimer()
+}
+@_hasMissingDesignatedInitializers public class NetworkReachabilityMonitor {
+  public static let shared: Cognitive3DAnalytics.NetworkReachabilityMonitor
+  public var isConnected: Swift.Bool {
+    get
+  }
+  public var connectionType: Cognitive3DAnalytics.NetworkReachabilityMonitor.ConnectionType {
+    get
+  }
+  public typealias ConnectionStatusCallback = (Swift.Bool, Cognitive3DAnalytics.NetworkReachabilityMonitor.ConnectionType) -> Swift.Void
+  public enum ConnectionType {
+    case wifi
+    case cellular
+    case wired
+    case other
+    case unavailable
+    public var description: Swift.String {
+      get
+    }
+    public var icon: Swift.String {
+      get
+    }
+    public static func == (a: Cognitive3DAnalytics.NetworkReachabilityMonitor.ConnectionType, b: Cognitive3DAnalytics.NetworkReachabilityMonitor.ConnectionType) -> Swift.Bool
+    public func hash(into hasher: inout Swift.Hasher)
+    public var hashValue: Swift.Int {
+      get
+    }
+  }
+  @objc deinit
+  @discardableResult
+  public func addConnectionStatusCallback(_ callback: @escaping Cognitive3DAnalytics.NetworkReachabilityMonitor.ConnectionStatusCallback) -> Foundation.UUID
+  public func removeConnectionStatusCallback(token: Foundation.UUID)
+  public func refreshNetworkStatus()
+}
+public enum LogLevel : Swift.Int, Swift.Comparable {
+  case all
+  case warningsAndErrors
+  case errorsOnly
+  case none
+  public static func < (lhs: Cognitive3DAnalytics.LogLevel, rhs: Cognitive3DAnalytics.LogLevel) -> Swift.Bool
+  public init?(rawValue: Swift.Int)
+  public typealias RawValue = Swift.Int
+  public var rawValue: Swift.Int {
+    get
+  }
+}
+public class CognitiveLog {
+  public var currentLogLevel: Cognitive3DAnalytics.LogLevel
+  public var isDebugVerbose: Swift.Bool {
+    get
+    set
+  }
+  public init(category: Swift.String = "default")
+  public func setLoggingLevel(level: Cognitive3DAnalytics.LogLevel)
+  public func info(_ message: Swift.String)
+  public func warning(_ message: Swift.String)
+  public func error(_ message: Swift.String)
+  public func verbose(_ message: Swift.String)
+  public func formatDebug(_ title: Swift.String, _ fields: [Swift.String : Any])
+  public func formatSensor(name: Swift.String, value: Swift.Double, timestamp: Swift.Double)
+  @objc deinit
+}
+public class FrameRateRecorder : Combine.ObservableObject {
+  @Combine.Published @_projectedValueProperty($fps) public var fps: Swift.Double {
+    get
+  }
+  public var $fps: Combine.Published<Swift.Double>.Publisher {
+    get
+  }
+  @Combine.Published @_projectedValueProperty($low5Percent) public var low5Percent: Swift.Double {
+    get
+  }
+  public var $low5Percent: Combine.Published<Swift.Double>.Publisher {
+    get
+  }
+  @Combine.Published @_projectedValueProperty($low1Percent) public var low1Percent: Swift.Double {
+    get
+  }
+  public var $low1Percent: Combine.Published<Swift.Double>.Publisher {
+    get
+  }
+  public init(updateInterval: Foundation.TimeInterval = 1.0)
+  public init(sensorRecorder: Cognitive3DAnalytics.SensorRecorder, updateInterval: Foundation.TimeInterval = 1.0)
+  public func startTracking()
+  public func endSession()
+  public func stop()
+  @objc deinit
+  public typealias ObjectWillChangePublisher = Combine.ObservableObjectPublisher
+}
+public enum SessionState {
+  case ready
+  case activeAppActive
+  case pausedAppInActive
+  case endedIdle(timeInterval: Foundation.TimeInterval)
+  case endedBackground
+}
+@frozen public enum SessionEvent {
+  case started(sessionId: Swift.String)
+  case ended(sessionId: Swift.String, state: Cognitive3DAnalytics.SessionState)
+}
+public protocol SessionDelegate : AnyObject {
+  func sessionDidEnd(sessionId: Swift.String, sessionState: Cognitive3DAnalytics.SessionState)
+}
+public enum DeviceProperty {
+  case appName, appVersion, appEngine, appEngineVersion, deviceType, deviceModel, deviceMemory, deviceOS, deviceCPU, deviceCPUCores, deviceCPUVendor, deviceGPU, deviceGPUDriver, deviceGPUVendor, deviceGPUMemory, vrModel, vrVendor
+  public static func == (a: Cognitive3DAnalytics.DeviceProperty, b: Cognitive3DAnalytics.DeviceProperty) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public enum Cognitive3DError : Swift.Error {
+  case alreadyConfigured
+  case notConfigured
+  case invalidConfiguration
+  public static func == (a: Cognitive3DAnalytics.Cognitive3DError, b: Cognitive3DAnalytics.Cognitive3DError) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public protocol IdleSessionDelegate : AnyObject {
+  func sessionDidEndDueToIdle(sessionId: Swift.String, idleDuration: Foundation.TimeInterval)
+}
+@_hasMissingDesignatedInitializers public class Cognitive3DAnalyticsCore {
+  public static let shared: Cognitive3DAnalytics.Cognitive3DAnalyticsCore
+  public var config: Cognitive3DAnalytics.Config?
+  public var customEventRecorder: Cognitive3DAnalytics.EventRecorder? {
+    get
+  }
+  public var gazeTracker: Cognitive3DAnalytics.GazeRecorder? {
+    get
+  }
+  public var sensorRecorder: Cognitive3DAnalytics.SensorRecorder? {
+    get
+  }
+  public var dynamicDataManager: Cognitive3DAnalytics.DynamicDataManager? {
+    get
+  }
+  public var gazeSyncManager: Cognitive3DAnalytics.GazeSyncManager {
+    get
+  }
+  public var sessionId: Swift.String {
+    get
+  }
+  public var isSessionActive: Swift.Bool {
+    get
+  }
+  public var entity: RealityFoundation.Entity?
+  public var scene: RealityFoundation.Scene?
+  public var sessionState: Cognitive3DAnalytics.SessionState
+  weak public var sessionDelegate: (any Cognitive3DAnalytics.SessionDelegate)?
+  final public let sessionEventPublisher: Combine.PassthroughSubject<Cognitive3DAnalytics.SessionEvent, Swift.Never>
+  public func configure(with settings: Cognitive3DAnalytics.CoreSettings) async throws
+  public func startSession() async -> Swift.Bool
+  public func endSession() async -> Swift.Bool
+  public func getCurrentSceneId() -> Swift.String
+  public func getSessionTimestamp() -> Swift.Double
+  public func getTimestamp() -> Swift.Double
+  public func getSessionId() -> Swift.String
+  public func getUserId() -> Swift.String
+  public func getDeviceId() -> Swift.String
+  public func getApiKey() -> Swift.String?
+  public func setSessionProperty(key: Swift.String, value: Any)
+  public func setSessionTag(_ tag: Swift.String, setValue: Swift.Bool = true)
+  public func setParticipantProperty(keySuffix: Swift.String, value: Swift.String)
+  public func setParticipantId(_ participantId: Swift.String)
+  public func getParticipantId() -> Swift.String
+  public func setParticipantFullName(_ participantName: Swift.String)
+  public func getParticipantFullName() -> Swift.String
+  public func setSceneById(sceneId: Swift.String, version: Swift.Int = 1, versionId: Swift.Int)
+  public static var version: Swift.String {
+    get
+  }
+  @objc deinit
+}
+extension Cognitive3DAnalytics.Cognitive3DAnalyticsCore {
+  @available(*, deprecated, message: "Use CustomEvent initializer directly instead")
+  public func createEvent(_ name: Swift.String) -> Cognitive3DAnalytics.CustomEvent
+  @available(*, deprecated, message: "Use CustomEvent initializer directly instead")
+  public func createEvent(_ name: Swift.String, properties: [Swift.String : Any]) -> Cognitive3DAnalytics.CustomEvent
+  @discardableResult
+  public func recordCustomEvent(name: Swift.String, position: [Swift.Double]?, properties: [Swift.String : Any], dynamicObjectId: Swift.String? = nil, immediate: Swift.Bool) -> Swift.Bool
+  public func beginEngagement(objectId: Swift.String, engagementName: Swift.String) async
+  public func beginEngagement(objectId: Swift.String, engagementName: Swift.String, uniqueEngagementId: Swift.String) async
+  public func beginEngagement(objectId: Swift.String, engagementName: Swift.String, uniqueEngagementId: Swift.String, properties: [Swift.String : Any]) async
+  public func endEngagement(objectId: Swift.String, engagementName: Swift.String) async
+  public func endEngagement(objectId: Swift.String, engagementName: Swift.String, uniqueEngagementId: Swift.String) async
+  public func endEngagement(objectId: Swift.String, engagementName: Swift.String, uniqueEngagementId: Swift.String, properties: [Swift.String : Any]) async
+}
+extension Cognitive3DAnalytics.Cognitive3DAnalyticsCore {
+  public func enableNetworkLogging(enabled: Swift.Bool, maxRecords: Swift.Int = 100, isVerboseLogging: Swift.Bool = false)
+  public func isNetworkLoggingEnabled() -> Swift.Bool
+  public func getNetworkRequestRecords() -> [Cognitive3DAnalytics.NetworkRequestRecord]
+  public func getRecentNetworkRequestRecords(count: Swift.Int = 10) -> [Cognitive3DAnalytics.NetworkRequestRecord]
+  public func clearNetworkRequestRecords()
+  @discardableResult
+  public func performNetworkLoggingTest() -> Swift.Bool
+  public func getNetworkLoggingDiagnostics() -> [Swift.String : Any]
+  public func configureNetworkLogging(enabled: Swift.Bool, maxRecords: Swift.Int = 100, isVerboseLogging: Swift.Bool = false)
+}
+public struct NetworkRequestRecord : Swift.Identifiable, Swift.Codable {
+  public let id: Foundation.UUID
+  public let timestamp: Foundation.Date
+  public let url: Swift.String
+  public let method: Swift.String
+  public let requestHeaders: [Swift.String : Swift.String]
+  public let requestBody: Swift.String?
+  public let statusCode: Swift.Int?
+  public let responseHeaders: [Swift.String : Swift.String]?
+  public let responseBody: Swift.String?
+  public let error: Swift.String?
+  public init(id: Foundation.UUID = UUID(), timestamp: Foundation.Date = Date(), url: Swift.String, method: Swift.String, requestHeaders: [Swift.String : Swift.String], requestBody: Swift.String? = nil, statusCode: Swift.Int? = nil, responseHeaders: [Swift.String : Swift.String]? = nil, responseBody: Swift.String? = nil, error: Swift.String? = nil)
+  public typealias ID = Foundation.UUID
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+@_hasMissingDesignatedInitializers public class NetworkRequestLogger {
+  public static let shared: Cognitive3DAnalytics.NetworkRequestLogger
+  public func configure(isEnabled: Swift.Bool, maxRecords: Swift.Int = 100, isVerboseLogging: Swift.Bool = false)
+  public func isLoggingEnabled() -> Swift.Bool
+  public func logRequest(url: Swift.String, method: Swift.String, requestHeaders: [Swift.String : Swift.String], requestBody: Foundation.Data?)
+  public func logResponse(url: Swift.String, statusCode: Swift.Int, responseHeaders: [Swift.String : Swift.String]?, responseBody: Foundation.Data?)
+  public func logError(url: Swift.String, error: any Swift.Error)
+  public func clearRecords()
+  public func getRecords() -> [Cognitive3DAnalytics.NetworkRequestRecord]
+  public func getRecentRecords(count: Swift.Int = 10) -> [Cognitive3DAnalytics.NetworkRequestRecord]
+  @objc deinit
+}
+public struct Gaze : Swift.Codable {
+  public let userId: Swift.String
+  public let timestamp: Swift.Double
+  public let sessionId: Swift.String
+  public let part: Swift.Int
+  public let formatVersion: Swift.String
+  public let hmdType: Swift.String
+  public let interval: Swift.Double
+  public let properties: [Swift.String : Any]
+  public let data: [Cognitive3DAnalytics.GazeEventData]
+  public init(userId: Swift.String, timestamp: Swift.Double, sessionId: Swift.String, part: Swift.Int, formatVersion: Swift.String, hmdType: Swift.String, interval: Swift.Double, properties: [Swift.String : Any], data: [Cognitive3DAnalytics.GazeEventData])
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct GazeEventData : Swift.Codable {
+  public let time: Swift.Double
+  public let floorPosition: [Swift.Double]
+  public let gazePoint: [Swift.Double]
+  public let headPosition: [Swift.Double]
+  public let headRotation: [Swift.Double]
+  public let objectId: Swift.String?
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+extension Cognitive3DAnalytics.GazeEventData {
+  public func debugPrint() -> Swift.String
+}
+public struct HandComponent : RealityFoundation.Component, Swift.Codable, Swift.Sendable {
+  public var dynamicId: Swift.String
+  public var name: Swift.String
+  public var mesh: Swift.String
+  public var syncWithGaze: Swift.Bool
+  public var updateRate: Swift.Float
+  public var positionThreshold: Swift.Float
+  public var rotationThreshold: Swift.Float
+  public var scaleThreshold: Swift.Float
+  public init()
+  public init(dynamicId: Swift.String = "", name: Swift.String = "", mesh: Swift.String = "", syncWithGaze: Swift.Bool = false, updateRate: Swift.Float = 0.1, positionThreshold: Swift.Float = 0.01, rotationThreshold: Swift.Float = 0.1, scaleThreshold: Swift.Float = 0.1)
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+@_Concurrency.MainActor @preconcurrency public struct BooleanQuestionView : SwiftUICore.View {
+  @SwiftUICore.Binding @_projectedValueProperty($answer) @_Concurrency.MainActor @preconcurrency public var answer: Swift.Bool? {
+    get
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    nonmutating set
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    nonmutating _modify
+  }
+  @_Concurrency.MainActor @preconcurrency public var $answer: SwiftUICore.Binding<Swift.Bool?> {
+    get
+  }
+  @_Concurrency.MainActor @preconcurrency public let title: Swift.String
+  @_Concurrency.MainActor @preconcurrency public init(answer: SwiftUICore.Binding<Swift.Bool?>, title: Swift.String)
+  @_Concurrency.MainActor @preconcurrency public var body: some SwiftUICore.View {
+    get
+  }
+  public typealias Body = @_opaqueReturnTypeOf("$s20Cognitive3DAnalytics19BooleanQuestionViewV4bodyQrvp", 0) __
+}
+@_Concurrency.MainActor @preconcurrency public struct HappySadQuestionView : SwiftUICore.View {
+  @SwiftUICore.Binding @_projectedValueProperty($answer) @_Concurrency.MainActor @preconcurrency public var answer: Swift.Bool? {
+    get
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    nonmutating set
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    nonmutating _modify
+  }
+  @_Concurrency.MainActor @preconcurrency public var $answer: SwiftUICore.Binding<Swift.Bool?> {
+    get
+  }
+  @_Concurrency.MainActor @preconcurrency public let title: Swift.String
+  @_Concurrency.MainActor @preconcurrency public init(answer: SwiftUICore.Binding<Swift.Bool?>, title: Swift.String)
+  @_Concurrency.MainActor @preconcurrency public var body: some SwiftUICore.View {
+    get
+  }
+  public typealias Body = @_opaqueReturnTypeOf("$s20Cognitive3DAnalytics20HappySadQuestionViewV4bodyQrvp", 0) __
+}
+@_Concurrency.MainActor @preconcurrency public struct ThumbsQuestionView : SwiftUICore.View {
+  @SwiftUICore.Binding @_projectedValueProperty($answer) @_Concurrency.MainActor @preconcurrency public var answer: Swift.Bool? {
+    get
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    nonmutating set
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    nonmutating _modify
+  }
+  @_Concurrency.MainActor @preconcurrency public var $answer: SwiftUICore.Binding<Swift.Bool?> {
+    get
+  }
+  @_Concurrency.MainActor @preconcurrency public let title: Swift.String
+  @_Concurrency.MainActor @preconcurrency public init(answer: SwiftUICore.Binding<Swift.Bool?>, title: Swift.String)
+  @_Concurrency.MainActor @preconcurrency public var body: some SwiftUICore.View {
+    get
+  }
+  public typealias Body = @_opaqueReturnTypeOf("$s20Cognitive3DAnalytics18ThumbsQuestionViewV4bodyQrvp", 0) __
+}
+
+public enum CoordinateSystem {
+  case visionOS
+  case leftHanded
+  public static func == (a: Cognitive3DAnalytics.CoordinateSystem, b: Cognitive3DAnalytics.CoordinateSystem) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+@_Concurrency.MainActor @preconcurrency public struct ScaleQuestionView : SwiftUICore.View {
+  @SwiftUICore.Binding @_projectedValueProperty($answer) @_Concurrency.MainActor @preconcurrency public var answer: Swift.Int {
+    get
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    nonmutating set
+    @available(iOS 13.0, tvOS 13.0, watchOS 6.0, macOS 10.15, *)
+    nonmutating _modify
+  }
+  @_Concurrency.MainActor @preconcurrency public var $answer: SwiftUICore.Binding<Swift.Int> {
+    get
+  }
+  @_Concurrency.MainActor @preconcurrency public let title: Swift.String
+  @_Concurrency.MainActor @preconcurrency public let min: Swift.Int
+  @_Concurrency.MainActor @preconcurrency public let max: Swift.Int
+  @_Concurrency.MainActor @preconcurrency public let minLabel: Swift.String
+  @_Concurrency.MainActor @preconcurrency public let maxLabel: Swift.String
+  @_Concurrency.MainActor @preconcurrency public init(answer: SwiftUICore.Binding<Swift.Int>, title: Swift.String, min: Swift.Int, max: Swift.Int, minLabel: Swift.String, maxLabel: Swift.String)
+  @_Concurrency.MainActor @preconcurrency public var body: some SwiftUICore.View {
+    get
+  }
+  public typealias Body = @_opaqueReturnTypeOf("$s20Cognitive3DAnalytics17ScaleQuestionViewV4bodyQrvp", 0) __
+}
+
+extension Swift.SIMD4 where Scalar == Swift.Float {
+  public var xyz: Swift.SIMD3<Swift.Float> {
+    get
+  }
+}
+@objc public protocol ARSessionDelegate {
+  @objc optional func arSessionDidUpdatePosition(_ position: [Swift.Double])
+  @objc optional func arSessionDidUpdateTransform(_ transform: simd.simd_float4x4)
+}
+@_hasMissingDesignatedInitializers public class ARSessionManager {
+  public static let shared: Cognitive3DAnalytics.ARSessionManager
+  public var isTrackingActive: Swift.Bool {
+    get
+  }
+  public func addDelegate(_ delegate: any Cognitive3DAnalytics.ARSessionDelegate)
+  public func removeDelegate(_ delegate: any Cognitive3DAnalytics.ARSessionDelegate)
+  public func startTracking() async
+  public func stopTracking()
+  public func getPosition() -> [Swift.Double]?
+  @objc deinit
+}
+@_Concurrency.MainActor public class ProxyDynamicObjectsModel {
+  @_Concurrency.MainActor public var viewGeometries: [Swift.String : SwiftUI.GeometryProxy3D] {
+    get
+    set
+    _modify
+  }
+  @_Concurrency.MainActor public var viewModels: [Swift.String : Cognitive3DAnalytics.ViewPositionModel] {
+    get
+    set
+    _modify
+  }
+  @_Concurrency.MainActor public init()
+  @objc deinit
+}
+extension Cognitive3DAnalytics.ProxyDynamicObjectsModel : Observation.Observable {
+}
+public class PitchRecorder : Cognitive3DAnalytics.ARSessionDelegate {
+  public init(sensorRecorder: Cognitive3DAnalytics.SensorRecorder, updateInterval: Foundation.TimeInterval = 1.0)
+  @objc deinit
+  public func startTracking()
+  public func endSession()
+  public func stop()
+  @objc public func arSessionDidUpdateTransform(_ transform: simd.simd_float4x4)
+}
+extension Cognitive3DAnalytics.AnalyticsSyncService : Swift.Sendable {}
+extension Cognitive3DAnalytics.GazeRecorderError : Swift.Equatable {}
+extension Cognitive3DAnalytics.GazeRecorderError : Swift.Hashable {}
+extension Cognitive3DAnalytics.ExitPollAnswerType : Swift.Equatable {}
+extension Cognitive3DAnalytics.ExitPollAnswerType : Swift.Hashable {}
+extension Cognitive3DAnalytics.ExitPollAnswerType : Swift.RawRepresentable {}
+extension Cognitive3DAnalytics.MultipleChoiceQuestionView : Swift.Sendable {}
+extension Cognitive3DAnalytics.ScenePhaseObserverModifier : Swift.Sendable {}
+extension Cognitive3DAnalytics.BooleanPresentationType : Swift.Equatable {}
+extension Cognitive3DAnalytics.BooleanPresentationType : Swift.Hashable {}
+extension Cognitive3DAnalytics.VoiceQuestionView : Swift.Sendable {}
+extension Cognitive3DAnalytics.DualFileCacheError : Swift.Equatable {}
+extension Cognitive3DAnalytics.DualFileCacheError : Swift.Hashable {}
+extension Cognitive3DAnalytics.DataCacheSystemError : Swift.Equatable {}
+extension Cognitive3DAnalytics.DataCacheSystemError : Swift.Hashable {}
+extension Cognitive3DAnalytics.ViewDisplayMode : Swift.Equatable {}
+extension Cognitive3DAnalytics.ViewDisplayMode : Swift.Hashable {}
+extension Cognitive3DAnalytics.PositionTrackerView : Swift.Sendable {}
+extension Cognitive3DAnalytics.QuestionType : Swift.Equatable {}
+extension Cognitive3DAnalytics.QuestionType : Swift.Hashable {}
+extension Cognitive3DAnalytics.QuestionType : Swift.RawRepresentable {}
+extension Cognitive3DAnalytics.NetworkReachabilityMonitor.ConnectionType : Swift.Equatable {}
+extension Cognitive3DAnalytics.NetworkReachabilityMonitor.ConnectionType : Swift.Hashable {}
+extension Cognitive3DAnalytics.LogLevel : Swift.Hashable {}
+extension Cognitive3DAnalytics.LogLevel : Swift.RawRepresentable {}
+extension Cognitive3DAnalytics.DeviceProperty : Swift.Equatable {}
+extension Cognitive3DAnalytics.DeviceProperty : Swift.Hashable {}
+extension Cognitive3DAnalytics.Cognitive3DError : Swift.Equatable {}
+extension Cognitive3DAnalytics.Cognitive3DError : Swift.Hashable {}
+extension Cognitive3DAnalytics.BooleanQuestionView : Swift.Sendable {}
+extension Cognitive3DAnalytics.HappySadQuestionView : Swift.Sendable {}
+extension Cognitive3DAnalytics.ThumbsQuestionView : Swift.Sendable {}
+extension Cognitive3DAnalytics.CoordinateSystem : Swift.Equatable {}
+extension Cognitive3DAnalytics.CoordinateSystem : Swift.Hashable {}
+extension Cognitive3DAnalytics.ScaleQuestionView : Swift.Sendable {}
+extension Cognitive3DAnalytics.ProxyDynamicObjectsModel : Swift.Sendable {}

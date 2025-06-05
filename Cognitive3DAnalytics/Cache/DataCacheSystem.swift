@@ -105,8 +105,6 @@ public actor DataCacheSystem {
             if let coreLogger = Cognitive3DAnalyticsCore.shared.logger {
                 if coreLogger.isDebugVerbose {
                     logger.info("Init DataCacheSystem with path \(cachePath)")
-                } else {
-                    logger.info("Init DataCacheSystem")
                 }
 
                 // Set the logger's log level to match the core logger
@@ -315,7 +313,7 @@ public actor DataCacheSystem {
             isUploading = true
             logger.info("Memory cache has \(inMemoryCache.count) entries & will start uploading")
         } else {
-            logger.info("No cached content to upload")
+            logger.verbose("No cached content to upload")
             return
         }
 
@@ -438,7 +436,8 @@ public actor DataCacheSystem {
 
         // Ensure we have a delegate before creating a continuation
         guard let delegate = self.delegate else {
-            logger.error("No delegate available for uploading cached request to \(url.lastPathComponent)")
+            logger.error("No delegate available for uploading cached request to '\(url.absoluteString)'")
+            logger.error("The local data cache will not function without a delegate")
             return false
         }
 

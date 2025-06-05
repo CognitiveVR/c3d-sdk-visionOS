@@ -277,7 +277,7 @@ public class EventRecorder {
 
             if response.received {
                 jsonPart += 1
-                logger.verbose("Batch of \(eventsToSend.count) events sent successfully")
+                logger.verbose("Batch events \(eventsToSend.count) sent successfully")
                 return true
             } else {
                 logger.warning("Failed to send batch - server did not accept the data")
@@ -397,7 +397,11 @@ public class EventRecorder {
         stopTimeChecking()
 
         if !batchedEvents.isEmpty {
+            #if DEBUG
             logger.info("Processing \(batchedEvents.count) remaining events before session end")
+            #else
+            logger.verbose("Processing \(batchedEvents.count) remaining events before session end")
+            #endif
             _ = sendBatchedEvents()
         }
     }

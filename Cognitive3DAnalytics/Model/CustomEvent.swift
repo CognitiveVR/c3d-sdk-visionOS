@@ -17,10 +17,11 @@ public class CustomEvent {
     /// Properties that get uploaded with an event.
     private var properties: [String: Any]
 
-    /// Reference to
+    /// Reference to core class to access SDK components
     private weak var core: Cognitive3DAnalyticsCore?
 
     /// Optional position associated with an event.
+    /// The application developer can specify a positon when creating an event; if no position is specified, the HMD position is used.
     private var position: [Double]?
 
     /// Optional dynamic object identfier assoiated with an event.
@@ -123,47 +124,6 @@ public class CustomEvent {
         return self
     }
 
-    /// Send this event with high priority
-    /// Note: All events now use the batching system
-    /// - Parameter position: Optional position to use (overrides previously set position)
-    /// - Returns: Success status
-    @discardableResult
-    public func sendWithHighPriority(_ position: [Double]? = nil) -> Bool {
-        guard let core = core else { return false }
-
-        let finalPosition = position ?? self.position ?? core.getCurrentHMDPosition()
-
-        // Calculate duration and add as property if significant (>10ms)
-        let duration = Date().timeIntervalSince1970 - startTime
-        if duration > 0.01 {
-            properties["duration"] = duration
-        }
-
-        // Create the properly prefixed name
-        let finalName = name.starts(with: "c3d") || name.starts(with: "c3d.")
-            ? name
-            : "c3d.\(name)"
-
-        // If we have a dynamic object ID, use recordDynamicCustomEvent method through core
-        if let dynamicId = dynamicObjectId {
-            return core.recordDynamicCustomEvent(
-                name: finalName,
-                position: finalPosition,
-                properties: properties,
-                dynamicObjectId: dynamicId,
-                immediate: false
-            )
-        } else {
-            // Otherwise use the standard method
-            return core.recordCustomEvent(
-                name: finalName,
-                position: finalPosition,
-                properties: properties,
-                immediate: false
-            )
-        }
-    }
-
     /// Send this event (batched for network efficiency)
     /// - Parameter position: Optional position to use (overrides previously set position)
     /// - Returns: Success status
@@ -179,15 +139,10 @@ public class CustomEvent {
             properties["duration"] = duration
         }
 
-        // Create the properly prefixed name
-        let finalName = name.starts(with: "c3d") || name.starts(with: "c3d.")
-            ? name
-            : "c3d.\(name)"
-
         // If we have a dynamic object ID, use recordDynamicCustomEvent method through core
         if let dynamicId = dynamicObjectId {
             return core.recordDynamicCustomEvent(
-                name: finalName,
+                name: name,
                 position: finalPosition,
                 properties: properties,
                 dynamicObjectId: dynamicId,
@@ -196,7 +151,7 @@ public class CustomEvent {
         } else {
             // Otherwise use the standard method
             return core.recordCustomEvent(
-                name: finalName,
+                name: name,
                 position: finalPosition,
                 properties: properties,
                 immediate: false
@@ -205,6 +160,15 @@ public class CustomEvent {
     }
 
     // MARK: - Deprecated Methods
+    /// Send this event.
+    /// Note: All events now use the batching system
+    /// - Parameter position: Optional position to use (overrides previously set position)
+    /// - Returns: Success status
+    @available(*, deprecated, message: "Use sendWithHighPriority is functionally the same as using send() and will be removed in a future release")
+    @discardableResult
+    public func sendWithHighPriority(_ position: [Double]? = nil) -> Bool {
+        return send(position)
+    }
 
     /// Send this event immediately without batching
     /// - Parameter position: Optional position to use (overrides previously set position)

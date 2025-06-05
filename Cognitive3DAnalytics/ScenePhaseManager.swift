@@ -82,7 +82,7 @@ public class ScenePhaseManager: ObservableObject {
                 Task {
                     core.sessionState = .endedBackground
                     core.sessionDelegate?.sessionDidEnd(sessionId: core.sessionId, sessionState: .endedBackground)
-                    _ = await core.endSession()
+                    await core.endSession()
                 }
             } else if !config.shouldSendDataOnInactive {
                 Task {
@@ -120,7 +120,7 @@ public class ScenePhaseManager: ObservableObject {
                 )
             }
 
-            let success = event?.sendWithHighPriority()
+            let success = event?.send()
             if let logger = core?.logger {
                 logger.info("custom event '\(eventName)' sent: \(success ?? false)")
             }

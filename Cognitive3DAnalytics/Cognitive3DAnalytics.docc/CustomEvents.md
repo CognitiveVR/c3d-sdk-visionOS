@@ -104,36 +104,6 @@ func recordEventWithPropertiesAndPosition() async {
 }
 ```
 
-## High Priority Events
-
-For important events that need to be processed with higher priority:
-
-```swift
-func recordHighPriorityEvent() async {
-    // Simple high priority event
-    let success = CustomEvent(name: "PurchaseComplete", core: analytics)
-        .sendWithHighPriority()
-    
-    // High priority event with position
-    let position: [Double] = [1.0, 0.8, 2.5]
-    let success = CustomEvent(name: "ErrorOccurred", core: analytics)
-        .sendWithHighPriority(position)
-    
-    // High priority event with properties
-    let success = CustomEvent(name: "PurchaseComplete", core: analytics)
-        .setProperty(key: "Amount", value: 49.99)
-        .setProperty(key: "Currency", value: "USD")
-        .sendWithHighPriority()
-    
-    // High priority event with properties and position
-    let position: [Double] = [1.5, 0.9, 2.2]
-    let success = CustomEvent(name: "ErrorOccurred", core: analytics)
-        .setProperty(key: "ErrorCode", value: 404)
-        .setProperty(key: "Message", value: "Resource not found")
-        .sendWithHighPriority(position)
-}
-```
-
 ## Dynamic Object Events
 
 Events can be associated with Dynamic Objects to track interactions with specific objects:
@@ -164,7 +134,7 @@ func recordDynamicObjectEvents(dynamicId: String) async {
     let success = CustomEvent(name: "CriticalObjectInteraction", core: analytics)
         .setDynamicObject(dynamicId)
         .setProperty(key: "Interaction", value: "Delete")
-        .sendWithHighPriority()
+        .send()
 }
 ```
 

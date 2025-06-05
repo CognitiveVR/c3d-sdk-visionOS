@@ -89,7 +89,9 @@ public class SensorRecorder {
             lastSensorValues[name] = (value, currentTime)
         }
 
-        logger.formatSensor(name: name, value: value, timestamp: cvr.getTimestamp())
+        #if DEBUG && DEBUG_SENSORS
+            logger.formatSensor(name: name, value: value, timestamp: cvr.getTimestamp())
+        #endif
 
         let reading: [Double] = [cvr.getTimestamp(), value]
         var shouldSendData = false
@@ -168,6 +170,10 @@ public class SensorRecorder {
             localData = batchedSensorData
             batchedSensorData.removeAll()
         }
+
+        #if DEBUG
+        logger.info("Batch sensors with count: \(localData.count)")
+        #endif
 
         guard shouldSend else {
             if verboseLogLevel > 1 {
@@ -258,7 +264,7 @@ public class SensorRecorder {
         queue.sync { hasData = !batchedSensorData.isEmpty }
 
         if hasData {
-            logger.info("Processing remaining sensor data")
+            logger.verbose("Processing remaining sensor data")
             await sendData()
         }
 

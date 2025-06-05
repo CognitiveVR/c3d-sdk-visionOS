@@ -159,15 +159,6 @@ struct AnswerData: Codable {
 
 // MARK: - File Management Helpers
 
-/// Add a file to the tracked list of pending exit poll uploads
-func addToPendingExitPolls(fileURL: URL) throws {
-    try addToTrackingList(fileURL: fileURL, listName: "pending_exitpoll_uploads.json")
-}
-
-/// Add a file to the tracked list of pending event uploads
-func addToLocalEvents(fileURL: URL) throws {
-    try addToTrackingList(fileURL: fileURL, listName: "pending_exitpoll_events.json")
-}
 
 /// Generic helper to add a file to a tracking list
 private func addToTrackingList(fileURL: URL, listName: String) throws {
@@ -197,66 +188,4 @@ private func addToTrackingList(fileURL: URL, listName: String) throws {
     let encoder = JSONEncoder()
     let data = try encoder.encode(trackedFiles)
     try data.write(to: trackingListURL)
-}
-
-// MARK: - Helper Functions for Saving Data
-
-/// Save exit poll data to a local file for later synchronization
-@discardableResult
-public func saveExitPollLocally(
-    viewModel: ExitPollSurveyViewModel,
-    hook: String,
-    sceneId: String,
-    position: [Double]
-) throws -> URL {
-    let core = Cognitive3DAnalyticsCore.shared
-
-    // Create question data from the view model
-    let questionData = viewModel.surveyQuestions.enumerated().map { index, question in
-        return QuestionData(
-            index: index,
-            type: question.type.rawValue,
-            answer: question.answer
-        )
-    }
-
-    // Create the data structure
-    let exitPollData = ExitPollLocalData(
-        timestamp: Date().timeIntervalSince1970,
-        hook: hook,
-        sceneId: sceneId,
-        position: position,
-        questionSetId: viewModel.questionSetId,
-        questionSetName: viewModel.questionSetName,
-        versionNumber: viewModel.questionSetVersion,
-        versionId: viewModel.versionId,
-        sessionId: core.getSessionId(),
-        participantId: core.getParticipantId(),
-        userId: core.getUserId(),
-        questions: questionData,
-        voiceRecordings: viewModel.microphoneResponses
-    )
-
-    // Serialize the data
-    let encoder = JSONEncoder()
-    let data = try encoder.encode(exitPollData)
-
-    // Save to documents directory with unique filename
-    let fileManager = FileManager.default
-    let documentsDirectory = try fileManager.url(
-        for: .documentDirectory,
-        in: .userDomainMask,
-        appropriateFor: nil,
-        create: true
-    )
-
-    let filename = "exitpoll_\(Date().timeIntervalSince1970).json"
-    let fileURL = documentsDirectory.appendingPathComponent(filename)
-
-    try data.write(to: fileURL)
-
-    // Add to tracking list
-    try addToPendingExitPolls(fileURL: fileURL)
-
-    return fileURL
 }
