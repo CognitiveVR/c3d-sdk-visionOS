@@ -13,7 +13,7 @@ import Foundation
 /// E.g "heart rate" : 160
 public class SensorRecorder {
     // MARK: - Properties
-    private var cvr: Cognitive3DAnalyticsCore
+    internal var cvr: Cognitive3DAnalyticsCore
     private var batchedSensorData: [String: [[Double]]] = [:]
     private var jsonPart = 1
     private let networkClient: NetworkAPIClient
@@ -26,7 +26,12 @@ public class SensorRecorder {
     private let minFrequencyKeepAliveSignal: TimeInterval = 2.0
     public var filteringEnabled: Bool = true
 
-    private var verboseLogLevel = 1
+    private var sendTimer: Timer?
+    private var autoSendInterval: TimeInterval = 10.0  // 10 seconds (configurable)
+    private var lastSendTime: TimeInterval = -60.0  // Track last send time
+
+    /// Sensors can produce a lot of data as they are being updated frequently - this property is used to control the amount of verbose logging.
+    private var verboseLogLevel = 2
 
     // Serial queue for synchronizing access to shared state
     private let queue = DispatchQueue(label: "com.cognitive3d.sensorrecorder")
@@ -46,12 +51,44 @@ public class SensorRecorder {
             logger.setLoggingLevel(level: coreLogger.currentLogLevel)
             logger.isDebugVerbose = coreLogger.isDebugVerbose
         }
+
+        // Get the configurable timer interval
+        autoSendInterval = config.sensorAutoSendInterval
     }
 
     deinit {
+        sendTimer?.invalidate()
         queue.sync {
             pendingTasks.forEach { $0.cancel() }
         }
+    }
+
+    // MARK: -
+    private func setupAutoSendTimer() {
+        logger.verbose("Setting up auto-send timer with interval: \(autoSendInterval) seconds")
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.sendTimer?.invalidate()
+            self.sendTimer = Timer(timeInterval: self.autoSendInterval, repeats: true) { [weak self] timer in
+                self?.logger.verbose("Auto-send timer triggered - timer is valid: \(timer.isValid)")
+                Task {
+                    await self?.sendData()
+                }
+            }
+            if let timer = self.sendTimer {
+                RunLoop.main.add(timer, forMode: .common)
+                self.logger.verbose("Timer added to RunLoop.main in .common mode")
+            }
+        }
+    }
+
+    internal func startSessionTimer() {
+        setupAutoSendTimer()
+    }
+
+    internal func stopSessionTimer() {
+        sendTimer?.invalidate()
+        sendTimer = nil
     }
 
     // MARK: - Public Methods
@@ -65,7 +102,6 @@ public class SensorRecorder {
     ///     2. The minimum keep-alive interval (2.0 seconds) hasn't elapsed since the last recording
     @discardableResult public func recordDataPoint(name: String, value: Double) -> Bool {
         guard cvr.isSessionActive else {
-            logger.warning("Cannot record sensor reading: Session not active")
             return false
         }
 
@@ -122,6 +158,8 @@ public class SensorRecorder {
     // MARK: - Internal Methods
     @discardableResult
     internal func sendData() async -> Sensor? {
+        logger.verbose("sendData() called - checking if data available to send")
+
         // Prepare data for sending
         let (shouldSend, localData, sensor) = prepareDataForSending()
 
@@ -130,6 +168,8 @@ public class SensorRecorder {
             return nil
         }
 
+        logger.verbose("Sending sensor data batch with \(localData.count) sensor types")
+
         // Send data to server
         do {
             let response = try await sendSensorDataToServer(sensor)
@@ -137,7 +177,9 @@ public class SensorRecorder {
             queue.sync {
                 if response.received {
                     jsonPart += 1
-                    logger.verbose("Successfully sent sensor data batch")
+                    lastSendTime = Date().timeIntervalSince1970  // Track send time
+                    logger.verbose("Successfully sent sensor data batch (part \(jsonPart-1)) at time \(lastSendTime)")
+
                 } else {
                     // Merge back the unsent data
                     mergeSensorDataBack(localData)
@@ -172,7 +214,7 @@ public class SensorRecorder {
         }
 
         #if DEBUG
-        logger.info("Batch sensors with count: \(localData.count)")
+            logger.info("Batch sensors with count: \(localData.count)")
         #endif
 
         guard shouldSend else {
@@ -273,6 +315,10 @@ public class SensorRecorder {
             pendingTasks.removeAll()
             batchedSensorData.removeAll()
         }
+
+        // Stop the auto-send timer
+        sendTimer?.invalidate()
+        sendTimer = nil
     }
 
     internal func getLog() -> CognitiveLog {

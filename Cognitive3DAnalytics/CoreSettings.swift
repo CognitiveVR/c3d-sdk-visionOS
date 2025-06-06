@@ -56,6 +56,9 @@ public class CoreSettings {
 
     public var isHandTrackingRequired = false
 
+    /// Sensor auto-send timer interval in seconds
+    public var sensorAutoSendInterval: Double = 10.0
+
     public init(
         defaultSceneName: String = "",
         allSceneData: [SceneData] = [],
@@ -70,7 +73,8 @@ public class CoreSettings {
         gazeInterval: Double = 0.1,
         dynamicObjectFileType: String = gltfFileType,
         fixationBatchSize: Int = 64,
-        isOfflineSupportEnabled: Bool = true
+        isOfflineSupportEnabled: Bool = true,
+        sensorAutoSendInterval: Double = 10.0
     ) {
         self.defaultSceneName = defaultSceneName
         self.allSceneData = allSceneData
@@ -86,5 +90,6 @@ public class CoreSettings {
         self.dynamicObjectFileType = dynamicObjectFileType
         self.fixationBatchSize = fixationBatchSize
         self.isOfflineSupportEnabled = isOfflineSupportEnabled
+        self.sensorAutoSendInterval = sensorAutoSendInterval
     }
 }

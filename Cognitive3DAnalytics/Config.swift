@@ -86,4 +86,7 @@ public class Config {
     public var useSyncServices = false
 
     public var isHandTrackingRequired = false
+
+    /// Sensor auto-send timer interval in seconds (configurable at runtime)
+    var sensorAutoSendInterval: Double = 10.0
 }

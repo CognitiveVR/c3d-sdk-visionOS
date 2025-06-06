@@ -20,7 +20,12 @@ public class AnalyticsSyncService {
         // Private initializer to enforce singleton pattern
     }
 
-    public func startNetworkMonitoring() {
+    public func startNetworkMonitoring(core: Cognitive3DAnalyticsCore) {
+
+        if let coreLogger = core.logger {
+            logger.currentLogLevel = coreLogger.currentLogLevel
+        }
+
         isInitializing = true
 
         // Add a callback to the network monitor

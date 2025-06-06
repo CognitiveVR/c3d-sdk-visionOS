@@ -29,7 +29,7 @@ extension Cognitive3DAnalyticsCore {
     /// Initialize the analytics sync service
     private func initializeAnalyticsSyncService() {
         Task {
-            await AnalyticsSyncService.shared.startNetworkMonitoring()
+            await AnalyticsSyncService.shared.startNetworkMonitoring(core: self)
         }
     }
 

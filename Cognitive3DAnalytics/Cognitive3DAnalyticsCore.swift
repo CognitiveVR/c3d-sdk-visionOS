@@ -255,6 +255,7 @@ public class Cognitive3DAnalyticsCore {
         config?.dynamicObjectFileType = settings.dynamicObjectFileType
         config?.fixationBatchSize = settings.fixationBatchSize
         config?.isHandTrackingRequired = settings.isHandTrackingRequired
+        config?.sensorAutoSendInterval = settings.sensorAutoSendInterval
     }
 
     private func setupDeviceIdentifier() {
@@ -500,6 +501,8 @@ public class Cognitive3DAnalyticsCore {
     func startSensorRecorders() {
         logger?.verbose("start internal sensor recorders")
 
+        sensorRecorder?.startSessionTimer()
+
         if let isRecordingFPS = config?.isRecordingFPS, isRecordingFPS {
             frameRateRecorder?.startTracking()
         }
@@ -529,6 +532,9 @@ public class Cognitive3DAnalyticsCore {
     /// Stop the various recorders that may be active.
     func stopSensorRecorders() {
         logger?.verbose("stop internal sensor recorders")
+
+        // Stop the sensor recorder timer
+        sensorRecorder?.stopSessionTimer()
 
         if let isRecordingFPS = config?.isRecordingFPS, isRecordingFPS {
             frameRateRecorder?.stop()
@@ -874,7 +880,7 @@ public class Cognitive3DAnalyticsCore {
 
     private func setupConnectivitySupport() async {
         // Initialize and start the sync service
-        await AnalyticsSyncService.shared.startNetworkMonitoring()
+        await AnalyticsSyncService.shared.startNetworkMonitoring(core: self)
     }
 }
 
