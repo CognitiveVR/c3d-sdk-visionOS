@@ -2,7 +2,7 @@
 //  CustomEventTests.swift
 //  Cognitive3DAnalytics-coreTests
 //
-//  Copyright (c) 2024 Cognitive3D, Inc. All rights reserved.
+//  Copyright (c) 2024-2025 Cognitive3D, Inc. All rights reserved.
 //
 
 import Testing

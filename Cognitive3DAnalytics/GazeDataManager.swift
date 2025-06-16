@@ -4,7 +4,7 @@
 //
 //  Created by Cognitive3D on 2024-12-02.
 //
-//  Copyright (c) 2024 Cognitive3D, Inc. All rights reserved.
+//  Copyright (c) 2024-2025 Cognitive3D, Inc. All rights reserved.
 //
 
 import Foundation
@@ -31,7 +31,7 @@ import Observation
     private var isBodyDebugEnabled = false
 
     // Constants
-    internal let sendInterval: TimeInterval = 10.0  // Send data every 10 seconds
+    internal let sendInterval: TimeInterval = 2.0  // Send data every 2 seconds
 
     init(core: Cognitive3DAnalyticsCore) {
         self.core = core

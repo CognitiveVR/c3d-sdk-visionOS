@@ -21,6 +21,8 @@ extension ImmersiveView {
     ///  * associate the current scene with the gaze system which is required for ray casting
     ///
     ///  The registration of the dynamic objects use the custom `DynamicComponent` to obtain the required properties to use with the `DynamicDataManager`.
+    ///  Note: ideally, a query would be done using the  `RealityKit` `Scene` but the scene instance is not known at this time.
+    // TODO: refactor the approach to dynamic object registration to wait until the scene is known?
     @discardableResult
     func configureDynamicObjects(entity: Entity)-> [(entity: Entity, component: DynamicComponent)] {
         let core = Cognitive3DAnalyticsCore.shared

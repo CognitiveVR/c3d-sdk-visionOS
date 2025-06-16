@@ -2,7 +2,7 @@
 //  EventRecorder.swift
 //  Cognitive3DAnalytics
 //
-//  Copyright (c) 2024 Cognitive3D, Inc. All rights reserved.
+//  Copyright (c) 2024-2025 Cognitive3D, Inc. All rights reserved.
 //
 
 import Foundation
@@ -22,7 +22,7 @@ public class EventRecorder {
     private let batchSize: Int
 
     // Time-based sending properties
-    private let sendInterval: TimeInterval = 10.0  // Send data every 10 seconds
+    private let sendInterval: TimeInterval = 2.0  // Send data every 2 seconds
     private var nextSendTimestamp: Double = 0
     private var eventBatchTimer: Timer?
 

@@ -4,7 +4,7 @@
 //
 //  Created by Cognitive3D on 2024-12-02.
 //
-//  Copyright (c) 2024 Cognitive3D, Inc. All rights reserved.
+//  Copyright (c) 2024-2025 Cognitive3D, Inc. All rights reserved.
 //
 
 import ARKit
@@ -38,9 +38,9 @@ public protocol GazeRecorderDelegate: AnyObject {
     private var lastDebugTime: TimeInterval = 0
     private var updateCount: Int = 0
 
-    /// local override for debugging, setting this to true can produce a signifcant amount of debug
+    /// local override for debugging, setting this to true can produce a significant amount of debug
     private let isDebugVerbose = false
-    private let logInterval: TimeInterval = 10.0  // Log stats every 10 seconda
+    private let logInterval: TimeInterval = 10.0  // Log stats every 10 seconds
 
     // We only want to report this once.
     private var hasLoggedWarning = false

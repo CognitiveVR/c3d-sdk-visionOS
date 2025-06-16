@@ -2,6 +2,9 @@
 //  HandTracking.swift
 //  Cognitive3DAnalytics
 //
+//  Copyright (c) 2024-2025 Cognitive3D, Inc. All rights reserved.
+//
+//
 // This static class works to record hand tracking data.
 // A special type of dynamic object is created; a "controller" is created for each hand.
 //
@@ -190,6 +193,32 @@ public class HandTracking: NSObject {
         }
     }
 
+    // MARK: - Update Rate Logic
+    /// Determines if a hand should be updated based on its individual updateRate, gaze sync setting, or properties
+    private static func shouldUpdateHand(_ component: HandComponent, currentTime: TimeInterval, hasProperties: Bool)
+        -> Bool
+    {
+        // Always update if we have properties (like enabled state changes)
+        if hasProperties {
+            return true
+        }
+
+        // For gaze-synced hands, limit to 30 FPS instead of every frame
+        if component.syncWithGaze {
+            // Simple modulo-based rate limiting for gaze sync
+            let frameNumber = Int(currentTime * 30)  // 30 FPS
+            return frameNumber % 1 == 0  // Update every frame at 30 FPS
+        }
+
+        // For regular hands, use simple time-based check
+        let updateInterval = TimeInterval(component.updateRate)
+        let frameNumber = Int(currentTime / updateInterval)
+        let lastFrameNumber = Int((currentTime - 0.016) / updateInterval)  // Assume ~60 FPS
+
+        // Update if we've crossed into a new update interval
+        return frameNumber != lastFrameNumber
+    }
+
     // MARK: - Hand Tracking Session
     /// Check and request authorization before starting hand tracking
     private static func handTrackingIsAuthorized(session: ARKitSession) async -> Bool {
@@ -233,67 +262,69 @@ public class HandTracking: NSObject {
     }
 
     private static func processHandTrackingUpdates(handTracking: HandTrackingProvider) async {
-       for await anchorUpdate in handTracking.anchorUpdates {
-           let handAnchor = anchorUpdate.anchor
-           let timestamp = Date().timeIntervalSince1970
+        for await anchorUpdate in handTracking.anchorUpdates {
+            let handAnchor = anchorUpdate.anchor
+            let timestamp = Date().timeIntervalSince1970
 
-           // Always detect state changes, regardless of joint availability
-           let hasStateChanged = detectStateChange(
-               for: handAnchor.chirality,
-               currentlyTracked: handAnchor.isTracked
-           )
+            // Always detect state changes, regardless of joint availability
+            let hasStateChanged = detectStateChange(
+                for: handAnchor.chirality,
+                currentlyTracked: handAnchor.isTracked
+            )
 
-           // Handle untracked hands
-           if !handAnchor.isTracked {
-               if hasStateChanged {
-                   await recordUntrackedHandState(handAnchor: handAnchor, timestamp: timestamp)
-               }
-               continue
-           }
+            // Handle untracked hands
+            if !handAnchor.isTracked {
+                if hasStateChanged {
+                    await recordUntrackedHandState(handAnchor: handAnchor, timestamp: timestamp)
+                }
+                continue
+            }
 
-           // Only process position updates if tracked and joints available
-           guard let wristJoint = handAnchor.handSkeleton?.joint(.wrist),
-                 wristJoint.isTracked else { continue }
+            // Only process position updates if tracked and joints available
+            guard let wristJoint = handAnchor.handSkeleton?.joint(.wrist),
+                wristJoint.isTracked
+            else { continue }
 
-           await processHandUpdate(handAnchor: handAnchor, wristJoint: wristJoint, hasStateChanged: hasStateChanged)
-       }
+            await processHandUpdate(handAnchor: handAnchor, wristJoint: wristJoint, hasStateChanged: hasStateChanged)
+        }
     }
 
-    private static func processHandUpdate(handAnchor: HandAnchor, wristJoint: HandSkeleton.Joint, hasStateChanged: Bool) async {
-       let timestamp = Date().timeIntervalSince1970
-       let handId = handAnchor.chirality == .left ? leftHandId : rightHandId
+    private static func processHandUpdate(handAnchor: HandAnchor, wristJoint: HandSkeleton.Joint, hasStateChanged: Bool)
+        async
+    {
+        let timestamp = Date().timeIntervalSince1970
+        let handId = handAnchor.chirality == .left ? leftHandId : rightHandId
 
-       // Get the base wrist transform in world space
-       // This combines the hand anchor's position with the wrist joint's local position
-       let wristTransform = handAnchor.originFromAnchorTransform * wristJoint.anchorFromJointTransform
+        // Get the base wrist transform in world space
+        // This combines the hand anchor's position with the wrist joint's local position
+        let wristTransform = handAnchor.originFromAnchorTransform * wristJoint.anchorFromJointTransform
 
-       // Create visual transform with rotation adjustments for proper mesh display
-       let visualTransform = applyHandMeshRotations(
-           transform: wristTransform,
-           chirality: handAnchor.chirality
-       )
+        // Create visual transform with rotation adjustments for proper mesh display
+        let visualTransform = applyHandMeshRotations(
+            transform: wristTransform,
+            chirality: handAnchor.chirality
+        )
 
-       // Create hand tracking data with state change information
-       let handData = HandTrackingData(
-           handId: handId,
-           chirality: handAnchor.chirality,
-           worldTransform: wristTransform,
-           visualTransform: visualTransform,
-           isTracked: handAnchor.isTracked,
-           timestamp: timestamp,
-           hasStateChanged: hasStateChanged
-       )
+        // Create hand tracking data with state change information
+        let handData = HandTrackingData(
+            handId: handId,
+            chirality: handAnchor.chirality,
+            worldTransform: wristTransform,
+            visualTransform: visualTransform,
+            isTracked: handAnchor.isTracked,
+            timestamp: timestamp,
+            hasStateChanged: hasStateChanged
+        )
 
-       // Notify delegate of the update
-       delegate?.handTrackingDidUpdate(handData)
+        // Notify delegate of the update
+        delegate?.handTrackingDidUpdate(handData)
 
-       // Record the hand data for analytics
-       await recordHandData(handData: handData)
+        // Record the hand data for analytics
+        await recordHandData(handData: handData)
     }
 
     private static func recordUntrackedHandState(handAnchor: HandAnchor, timestamp: TimeInterval) async {
         let handId = handAnchor.chirality == .left ? leftHandId : rightHandId
-
 
         let handData = HandTrackingData(
             handId: handId,
@@ -370,8 +401,8 @@ public class HandTracking: NSObject {
             let handData = HandTrackingData(
                 handId: handId,
                 chirality: handAnchor.chirality,
-                worldTransform: simd_float4x4(1), // identity matrix
-                visualTransform: simd_float4x4(1), // identity matrix
+                worldTransform: simd_float4x4(1),  // identity matrix
+                visualTransform: simd_float4x4(1),  // identity matrix
                 isTracked: false,
                 timestamp: timestamp,
                 hasStateChanged: true
@@ -414,8 +445,15 @@ public class HandTracking: NSObject {
     }
 
     /// Record hand data to the analytics system with conditional properties
+    /// Now includes update rate timing control to match DynamicObjectSystem behavior
     private static func recordHandData(handData: HandTrackingData) async {
         let component = handData.chirality == .left ? leftHandComponent : rightHandComponent
+        let hasProperties = handData.hasStateChanged
+
+        // Check if we should update based on updateRate timing and component settings
+        if !shouldUpdateHand(component, currentTime: handData.timestamp, hasProperties: hasProperties) {
+            return  // Skip this update due to rate limiting
+        }
 
         // Extract position from the world transform matrix using framework extension
         let position = handData.worldTransform.position
@@ -443,10 +481,12 @@ public class HandTracking: NSObject {
             handData.hasStateChanged ? [["enabled": AnyCodable(handData.isTracked)]] : nil
 
         if properties != nil {
-            core?.logger?.verbose("\(handData.chirality == .right ? "Right" : "Left") hand tracking \(handData.isTracked)")
+            core?.logger?.verbose(
+                "\(handData.chirality == .right ? "Right" : "Left") hand tracking \(handData.isTracked)"
+            )
         }
 
-        // Record the data with the dynamic manager
+        // Record the data with the dynamic manager using component-specific thresholds
         await dynamicManager?.recordDynamicObject(
             id: component.dynamicId,
             position: position,
@@ -462,9 +502,6 @@ public class HandTracking: NSObject {
 
     // MARK: - Session Events
     public func sessionDidStart(sessionId: String) {
-        // Handle session start if needed
-        // Could be used to initialize hand tracking state
-
         // Reset hand states when session starts
         Self.leftHandState = HandTrackingState()
         Self.rightHandState = HandTrackingState()
@@ -472,7 +509,6 @@ public class HandTracking: NSObject {
 
     public func sessionDidEnd(sessionId: String, sessionState: SessionState) {
         // Handle session end cleanup if needed
-        // Could be used to finalize hand tracking data
     }
 
     // MARK: - Public API for Hand Component Access
@@ -482,6 +518,7 @@ public class HandTracking: NSObject {
     }
 
     /// Update hand component configuration
+    /// Note: Changes to updateRate will affect future timing decisions
     public static func updateHandComponent(
         for chirality: HandAnchor.Chirality,
         updateRate: Float? = nil,

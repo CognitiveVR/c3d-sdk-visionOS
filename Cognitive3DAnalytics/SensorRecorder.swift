@@ -2,7 +2,7 @@
 //  SensorRecorder.swift
 //  Cognitive3DAnalytics
 //
-//  Copyright (c) 2024 Cognitive3D, Inc. All rights reserved.
+//  Copyright (c) 2024-2025 Cognitive3D, Inc. All rights reserved.
 //
 
 import Foundation
@@ -27,7 +27,7 @@ public class SensorRecorder {
     public var filteringEnabled: Bool = true
 
     private var sendTimer: Timer?
-    private var autoSendInterval: TimeInterval = 10.0  // 10 seconds (configurable)
+    private var autoSendInterval: TimeInterval = 2.0  // 2 seconds (configurable)
     private var lastSendTime: TimeInterval = -60.0  // Track last send time
 
     /// Sensors can produce a lot of data as they are being updated frequently - this property is used to control the amount of verbose logging.

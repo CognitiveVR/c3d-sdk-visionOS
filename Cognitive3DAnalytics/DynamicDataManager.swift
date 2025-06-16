@@ -73,7 +73,7 @@ public actor DynamicDataManager {
 
     // Constants for batching network requests
     private let snapshotThreshold = 128
-    private let sendInterval: TimeInterval = 10.0
+    private let sendInterval: TimeInterval = 2.0
     private var nextSendTimestamp: Double = 0
 
     /// Controls whether manifest data should be sent when changes are detected
