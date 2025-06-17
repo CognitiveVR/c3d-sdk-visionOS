@@ -18,7 +18,7 @@ class NetworkDataCacheDelegate: DataCacheDelegate {
         let networkLogger = networkClient.getLog()
         logger.setLoggingLevel(level: networkLogger.currentLogLevel)
         logger.isDebugVerbose = networkLogger.isDebugVerbose
-        logger.info("NetworkDataCacheDelegate initialized")
+        logger.verbose("NetworkDataCacheDelegate: initialized")
     }
 
     func uploadCachedRequest(url: URL, body: Data, completion: @escaping (Bool) -> Void) {
@@ -28,7 +28,6 @@ class NetworkDataCacheDelegate: DataCacheDelegate {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.httpBody = body
-        request.timeoutInterval = 30 // 30 seconds timeout
 
         // Add headers from the network client to ensure proper authentication
         if let authHeader = networkClient.headers["Authorization"] {
@@ -38,7 +37,7 @@ class NetworkDataCacheDelegate: DataCacheDelegate {
 
         // Configure a session with better timeout behavior
         let config = URLSessionConfiguration.default
-        config.timeoutIntervalForResource = 60
+        config.timeoutIntervalForResource = 5
         let session = URLSession(configuration: config)
 
         Task {

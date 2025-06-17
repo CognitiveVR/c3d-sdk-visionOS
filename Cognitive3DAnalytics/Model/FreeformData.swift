@@ -4,7 +4,7 @@
 //
 //  Created by Manjit Bedi on 2024-11-28.
 //
-//  Copyright (c) 2024 Cognitive3D, Inc. All rights reserved.
+//  Copyright (c) 2024-2025 Cognitive3D, Inc. All rights reserved.
 //
 /// Freeform data enum adopting the Codable protocol to represent all possible JSON value types.
 /// Events can have additional data that does not adhere to a single definition.  It can be a dictionary or array of dictionaries with differing key value pairs & so on.

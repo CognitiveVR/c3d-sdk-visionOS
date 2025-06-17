@@ -4,7 +4,7 @@
 //
 //  Created by Cognitive3D on 2024-12-02.
 //
-//  Copyright (c) 2024 Cognitive3D, Inc. All rights reserved.
+//  Copyright (c) 2024-2025 Cognitive3D, Inc. All rights reserved.
 //
 
 import ARKit
@@ -38,12 +38,12 @@ public protocol GazeRecorderDelegate: AnyObject {
     private var lastDebugTime: TimeInterval = 0
     private var updateCount: Int = 0
 
-    /// local override for debugging, setting this to true can produce a signifcant amount of debug
+    /// local override for debugging, setting this to true can produce a significant amount of debug
     private let isDebugVerbose = false
-    private let logInterval: TimeInterval = 10.0  // Log stats every 10 seconda
+    private let logInterval: TimeInterval = 10.0  // Log stats every 10 seconds
 
     // We only want to report this once.
-    private var hasLoggedCollisionCheck = false
+    private var hasLoggedWarning = false
 
     // Convert gazeInterval to Double for consistent timing calculations
     private var gazeIntervalSeconds: TimeInterval {
@@ -82,10 +82,6 @@ public protocol GazeRecorderDelegate: AnyObject {
         guard !isTracking else {
             logger.warning("GazeTracker: Tracking already active - ignoring start request")
             return
-        }
-
-        if core.contentEntity != nil {
-            logger.warning("GazeTracker: cannot do collision raycasts without a contentEntity set")
         }
 
         do {
@@ -135,7 +131,6 @@ public protocol GazeRecorderDelegate: AnyObject {
         ]
     }
 
-
     /// Stop gaze tracking.
     public func stopTracking() {
         if isTracking {
@@ -168,14 +163,16 @@ public protocol GazeRecorderDelegate: AnyObject {
         let deviceTransform = await getDeviceTransform()
         let trackingData = extractTrackingData(from: deviceTransform, timestamp: Date().timeIntervalSince1970)
 
-        if let scene = await core.contentEntity?.scene {
-            if !hasLoggedCollisionCheck {
+        if let scene = await core.entity?.scene {
+            if !hasLoggedWarning {
                 logger.verbose("collision check using raycast length of \(config.raycastLength)")
-                hasLoggedCollisionCheck = true
+                hasLoggedWarning = true
             }
 
             if let collision = checkCollision(scene: scene, deviceTransform: deviceTransform) {
+                #if DEBUG_GAZES
                 logger.verbose("collision with \(collision.objectId)")
+                #endif
                 let newData = GazeEventData(
                     time: trackingData.time,
                     floorPosition: trackingData.floorPosition,
@@ -191,13 +188,21 @@ public protocol GazeRecorderDelegate: AnyObject {
                 await core.gazeSyncManager.notifyGazeTick()
                 return
             }
+
+            dataManager.recordGaze(trackingData)
+            delegate?.gazeTrackerDidUpdate(trackingData)
+
+            // Notify gaze sync
+            await core.gazeSyncManager.notifyGazeTick()
+        } else {
+            dataManager.recordGaze(trackingData)
+            delegate?.gazeTrackerDidUpdate(trackingData)
+
+            if !hasLoggedWarning {
+                logger.warning("Gaze tracking & ray casts: scene is not available yet.\nThe RealityView contents may not be fully loaded yet.")
+                hasLoggedWarning = true
+            }
         }
-
-        dataManager.recordGaze(trackingData)
-        delegate?.gazeTrackerDidUpdate(trackingData)
-
-        // Notify gaze sync
-        await core.gazeSyncManager.notifyGazeTick()
     }
 
     /// Create a raycast based on the gaze and check for collision hits in the scene.
@@ -318,7 +323,9 @@ public protocol GazeRecorderDelegate: AnyObject {
     }
 
     private func startContinuousTracking() async {
-        logger.info("🌐 Starting continuous tracking - interval: \(String(format: "%.1f", gazeIntervalSeconds))s (ARKit session started)")
+        logger.info(
+            "🌐 Starting continuous tracking - interval: \(String(format: "%.1f", gazeIntervalSeconds))s (ARKit session started)"
+        )
 
         var hasLoggedTrackingWarning = false
 

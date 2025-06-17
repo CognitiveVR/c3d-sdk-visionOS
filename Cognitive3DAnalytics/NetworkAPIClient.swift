@@ -2,7 +2,7 @@
 //  NetworkAPIClient.swift
 //  Cognitive3DAnalytics
 //
-//  Copyright (c) 2024 Cognitive3D, Inc. All rights reserved.
+//  Copyright (c) 2024-2025 Cognitive3D, Inc. All rights reserved.
 //
 
 import Foundation
@@ -18,6 +18,7 @@ public enum APIError: Error {
     case forbidden
     case notFound
     case serverError(Int)
+    case unknown(Error)
 
     var description: String {
         switch self {
@@ -49,6 +50,8 @@ public enum APIError: Error {
             default:
                 return "Server Error: Unexpected status code \(code)"
             }
+        case .unknown(let error):
+            return "Unknown Error: \(error.localizedDescription)"
         }
     }
 }
@@ -100,11 +103,13 @@ class NetworkAPIClient {
     ///   - version: Optional version parameter to include as a query string.
     ///   - method: The HTTP method for the request (default is `.post`).
     ///   - body: the type to be encoded as JSON
+    ///   - timeoutInterval: the server timeout interval, if defaults to 60 seconds
     /// - Returns: Decoded response of type `T`, or `nil` if the response body is empty and `T` is optional.
     /// - Throws: `APIError` if the URL is invalid, encoding fails, or the server responds with an error.
-    func makeRequest<T: Decodable, U: Encodable>(endpoint: String, sceneId: String, version: String, method: HTTPMethod = .post, body: U? = nil) async throws -> T {
+    func makeRequest<T: Decodable, U: Encodable>(endpoint: String, sceneId: String, version: String, method: HTTPMethod = .post, body: U? = nil, timeoutInterval: TimeInterval = 5.0) async throws -> T {
         // Dynamically construct the URL to handle empty components
         var urlString = "\(baseURL)/\(endpoint)"
+
 
         if !sceneId.isEmpty {
             urlString += "/\(sceneId)"
@@ -121,6 +126,7 @@ class NetworkAPIClient {
         logger.verbose("Making request to: \(urlString)")
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
+        request.timeoutInterval = timeoutInterval
 
         headers.forEach { request.addValue($0.value, forHTTPHeaderField: $0.key) }
 
