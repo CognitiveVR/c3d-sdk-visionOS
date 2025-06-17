@@ -13,6 +13,7 @@ public class ExitPollSurvey {
     internal var core: Cognitive3DAnalyticsCore
     internal let logger: CognitiveLog
     internal let networkClient: NetworkAPIClient
+    internal let exitPollCache: ExitPollCache
 
     /// Initializes the `ExitPollSurvey` with the analytics core and API key.
     /// - Parameter core: Configured instance of `Cognitive3DAnalyticsCore`.
@@ -39,6 +40,10 @@ public class ExitPollSurvey {
             logger.setLoggingLevel(level: coreLogger.currentLogLevel)
             logger.isDebugVerbose = coreLogger.isDebugVerbose
         }
+
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let cachePath = documentsDirectory.path + "/"
+        exitPollCache = ExitPollCache(path: cachePath)
     }
 
     // MARK: -
@@ -58,21 +63,51 @@ public class ExitPollSurvey {
             )
 
             logger.info("Successfully fetched \(response.questions.count) questions for hook \(hook).")
+            // Store the exit poll question set in the local data cache.
+            if let json = try? JSONEncoder().encode(response) {
+                exitPollCache.cacheQuestions(hook: hook, questionsData: json)
+            }
+
             return .success(response)
+        } catch APIError.networkError(let underlyingError) {  // If there is a network error, handle it specifically.
+            logger.error("Network error: \(underlyingError.localizedDescription)")
+            logger.info("Check if a cached question set is available")
+            // Check that the question set for the hook is cached, if so use it.
+            if let response = checkCache(hook: hook) {
+                return .success(response)
+            } else {
+                return .failure(.networkError(underlyingError))
+            }
         } catch let error as APIError {
             logger.error("API error: \(error.description)")
-            return .failure(error)
+            // check if the question set is cached in local data cache.
+            if let response = checkCache(hook: hook) {
+                return .success(response)
+            } else {
+                return .failure(.networkError(error))
+            }
         } catch {
             logger.error("Unexpected error: \(error.localizedDescription)")
-            return .failure(.networkError(error))
+            return .failure(.unknown(error))
         }
     }
 
     // MARK: -
-    func sendAllAnswers(using viewModel: ExitPollSurveyViewModel, hook: String, sceneId: String, questionSetVersion: Int, position: [Double]?) async throws {
+    func sendAllAnswers(
+        using viewModel: ExitPollSurveyViewModel,
+        hook: String,
+        sceneId: String,
+        questionSetVersion: Int,
+        position: [Double]?
+    ) async throws {
         logger.info("Preparing to send all collected answers.")
 
-        let fullResponse = viewModel.prepareJSONResponse(hook: hook, sceneId: sceneId, questionSetVersion: questionSetVersion, position: position)
+        let fullResponse = viewModel.prepareJSONResponse(
+            hook: hook,
+            sceneId: sceneId,
+            questionSetVersion: questionSetVersion,
+            position: position
+        )
         let endPoint = "questionSets/\(viewModel.questionSetName)/\(questionSetVersion)/responses"
 
         do {
@@ -95,9 +130,18 @@ public class ExitPollSurvey {
 
     // MARK: -
 
-    /// Save the resposnes to the local data cache
-    public func cacheExitPollResponsesToSendLater(responseData: Data, questionSetName: String, questionSetVersion: Int, eventProperties: [String: Any]) async -> Result<Void, Error> {
-        let responsesResult = await cacheExitPollResponses(responseData: responseData, questionSetName: questionSetName, questionSetVersion: questionSetVersion)
+    /// Save the responses to the local data cache
+    public func cacheExitPollResponsesToSendLater(
+        responseData: Data,
+        questionSetName: String,
+        questionSetVersion: Int,
+        eventProperties: [String: Any]
+    ) async -> Result<Void, Error> {
+        let responsesResult = await cacheExitPollResponses(
+            responseData: responseData,
+            questionSetName: questionSetName,
+            questionSetVersion: questionSetVersion
+        )
         switch responsesResult {
         case .success:
             let eventResult = await cacheExitPollEvent(eventProperties: eventProperties)
@@ -112,20 +156,32 @@ public class ExitPollSurvey {
         }
     }
 
-    private func cacheExitPollResponses(responseData: Data, questionSetName: String, questionSetVersion: Int) async -> Result<Void, Error> {
+    private func cacheExitPollResponses(responseData: Data, questionSetName: String, questionSetVersion: Int) async
+        -> Result<Void, Error>
+    {
         // Validate the question set name
         guard !questionSetName.isEmpty else {
             logger.error("Failed to create URL for exit poll answers: empty question set name")
-            return .failure(NSError(domain: "ExitPollError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid URL - empty question set name"]))
+            return .failure(
+                NSError(
+                    domain: "ExitPollError",
+                    code: 2,
+                    userInfo: [NSLocalizedDescriptionKey: "Invalid URL - empty question set name"]
+                )
+            )
         }
 
         // Create the URL for the API endpoint using NetworkEnvironment
-        guard let url = NetworkEnvironment.current.constructExitPollURL(
-            questionSetName: questionSetName,
-            version: questionSetVersion
-        ) else {
+        guard
+            let url = NetworkEnvironment.current.constructExitPollURL(
+                questionSetName: questionSetName,
+                version: questionSetVersion
+            )
+        else {
             logger.error("Failed to create URL for exit poll answers")
-            return .failure(NSError(domain: "ExitPollError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"]))
+            return .failure(
+                NSError(domain: "ExitPollError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])
+            )
         }
 
         // Cache the data in the DataCacheSystem
@@ -151,7 +207,7 @@ public class ExitPollSurvey {
                 userId: core.getUserId(),
                 timestamp: core.getSessionTimestamp(),
                 sessionId: core.getSessionId(),
-                part: 1, // Assuming this is the first part for cached events
+                part: 1,  // Assuming this is the first part for cached events
                 formatVersion: analyticsFormatVersion1,
                 data: [exitPollEventData]
             )
@@ -166,7 +222,13 @@ public class ExitPollSurvey {
 
             guard let url = URL(string: eventsEndpoint) else {
                 logger.error("Failed to create URL for exit poll event")
-                return .failure(NSError(domain: "ExitPollError", code: 3, userInfo: [NSLocalizedDescriptionKey: "Invalid event URL"]))
+                return .failure(
+                    NSError(
+                        domain: "ExitPollError",
+                        code: 3,
+                        userInfo: [NSLocalizedDescriptionKey: "Invalid event URL"]
+                    )
+                )
             }
 
             // Cache the properly formatted event data
@@ -179,7 +241,7 @@ public class ExitPollSurvey {
             return .failure(error)
         }
     }
-    
+
     // Helper method to convert values to FreeformData (copied from EventRecorder)
     private func convertToFreeformData(_ value: Any) -> FreeformData {
         switch value {
@@ -188,5 +250,21 @@ public class ExitPollSurvey {
         case let boolValue as Bool: return .boolean(boolValue)
         default: return .string(String(describing: value))
         }
+    }
+
+    // MARK: local data cache
+    private func checkCache(hook: String) -> ExitPollResponse? {
+        if let jsonData = exitPollCache.getCachedQuestions(hook: hook) {
+            let decoder = JSONDecoder()
+            do {
+                let exitPollSurvey = try decoder.decode(ExitPollResponse.self, from: jsonData)
+                return exitPollSurvey
+            } catch {
+                let core = Cognitive3DAnalyticsCore.shared
+                core.logger?.error("exit poll survey decoding failed: \(error)")
+            }
+        }
+
+        return nil
     }
 }

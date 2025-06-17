@@ -10,7 +10,7 @@ import Foundation
 extension DeviceProperties {
     // Convert DeviceProperties to dictionary
     public func toDictionary() -> [String: Any] {
-        var dict: [String: Any] = [
+        let dict: [String: Any] = [
             "c3d.username": username,
             "c3d.app.name": appName,
             "c3d.app.version": appVersion,
@@ -34,9 +34,6 @@ extension DeviceProperties {
             "c3d.app.engine": appEngine
         ]
 
-        #if INCLUDE_HEIGHT_PROPERTY
-        dict["c3d.height"] = height
-        #endif
 
         return dict
     }
@@ -69,36 +66,6 @@ extension DeviceProperties {
             return nil
         }
 
-        #if INCLUDE_HEIGHT_PROPERTY
-        guard let height = dict["c3d.height"] as? Double else {
-            return nil
-        }
-
-        return DeviceProperties(
-            username: username,
-            appName: appName,
-            appVersion: appVersion,
-            appEngineVersion: appEngineVersion,
-            deviceType: deviceType,
-            deviceCPU: deviceCPU,
-            deviceModel: deviceModel,
-            deviceGPU: deviceGPU,
-            deviceOS: deviceOS,
-            deviceMemory: deviceMemory,
-            deviceId: deviceId,
-            roomSize: roomSize,
-            roomSizeDescription: roomSizeDescription,
-            appInEditor: appInEditor,
-            version: version,
-            hmdType: hmdType,
-            hmdManufacturer: hmdManufacturer,
-            eyeTrackingEnabled: eyeTrackingEnabled,
-            eyeTrackingType: eyeTrackingType,
-            appSDKType: appSDKType,
-            appEngine: appEngine,
-            height: height
-        )
-        #else
         return DeviceProperties(
             username: username,
             appName: appName,
@@ -122,6 +89,5 @@ extension DeviceProperties {
             appSDKType: appSDKType,
             appEngine: appEngine
         )
-        #endif
     }
 }

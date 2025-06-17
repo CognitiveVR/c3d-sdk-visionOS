@@ -30,9 +30,6 @@ public struct DeviceProperties: Codable {
     let eyeTrackingType: String
     let appSDKType: String
     let appEngine: String
-#if INCLUDE_HEIGHT_PROPERTY
-    let height: Double
-#endif
 
     enum CodingKeys: String, CodingKey {
         case username = "c3d.username"
@@ -56,8 +53,5 @@ public struct DeviceProperties: Codable {
         case eyeTrackingType = "c3d.device.eyetracking.type"
         case appSDKType = "c3d.app.sdktype"
         case appEngine = "c3d.app.engine"
-#if INCLUDE_HEIGHT_PROPERTY
-        case height = "c3d.height"
-#endif
     }
 }

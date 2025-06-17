@@ -131,7 +131,7 @@ public class NetworkReachabilityMonitor {
         let statusChanged = (newIsConnected != isConnected || newConnectionType != connectionType)
 
         if statusChanged {
-            logger.info("Network status changed: \(newIsConnected ? "Connected" : "Disconnected"), \(newConnectionType.description)")
+            logger.verbose("Network reachability status changed: \(newIsConnected ? "Connected" : "Disconnected"), \(newConnectionType.description)")
 
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }

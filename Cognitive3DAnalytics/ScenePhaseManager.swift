@@ -60,13 +60,10 @@ public class ScenePhaseManager: ObservableObject {
             return
         }
 
-        let appName = getAppDisplayName()
         currentScenePhase = newPhase
 
-        let eventName: String
         switch newPhase {
         case .inactive:
-            eventName = "\(appName): scene phase inactive"
             if config.shouldSendDataOnInactive {
                 Task {
                     await core.sendData()
@@ -74,15 +71,15 @@ public class ScenePhaseManager: ObservableObject {
             }
 
         case .active:
-            eventName = "\(appName): scene phase active"
+            // No action needed for active state
+            return
 
         case .background:
-            eventName = "\(appName): scene phase background"
             if config.shouldEndSessionOnBackground {
                 Task {
                     core.sessionState = .endedBackground
                     core.sessionDelegate?.sessionDidEnd(sessionId: core.sessionId, sessionState: .endedBackground)
-                    _ = await core.endSession()
+                    await core.endSession()
                 }
             } else if !config.shouldSendDataOnInactive {
                 Task {
@@ -90,10 +87,8 @@ public class ScenePhaseManager: ObservableObject {
                 }
             }
         @unknown default:
-            eventName = "\(appName): scene phase"
+            return
         }
-
-        sendImmediateEvent(eventName: eventName)
     }
 
     private actor EventSender {
@@ -120,7 +115,7 @@ public class ScenePhaseManager: ObservableObject {
                 )
             }
 
-            let success = event?.sendWithHighPriority()
+            let success = event?.send()
             if let logger = core?.logger {
                 logger.info("custom event '\(eventName)' sent: \(success ?? false)")
             }

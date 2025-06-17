@@ -47,7 +47,7 @@ struct Manifest: Codable {
 }
 
 /// The manifest entry is used to register dynamic objects in the scene for the current analytics session.
-struct ManifestEntry: Codable, Equatable {
+struct ManifestEntry: Codable {  // , Equatable {
     /// Name of the actor in an scene
     let name: String
 
@@ -57,10 +57,26 @@ struct ManifestEntry: Codable, Equatable {
     /// The type of file for the mesh; e.g. GLTF
     let fileType: String
 
+    /// Optional controller type
+    let controllerType: String?
+
+    /// additional properties
+    let properties: [[String: AnyCodable]]?
+
     enum CodingKeys: String, CodingKey {
         case name
         case mesh
         case fileType
+        case controllerType
+        case properties
+    }
+
+    init(name: String, mesh: String, fileType: String, controllerType: String? = nil, properties: [[String: AnyCodable]]? = nil) {
+        self.name = name
+        self.mesh = mesh
+        self.fileType = fileType
+        self.controllerType = controllerType
+        self.properties = properties
     }
 }
 
