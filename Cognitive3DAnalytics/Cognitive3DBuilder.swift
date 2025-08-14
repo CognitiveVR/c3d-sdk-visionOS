@@ -160,6 +160,9 @@ public class Cognitive3DBuilder {
         let allScenes = buildSceneList()
         let coreSettings = buildCoreSettings(with: allScenes)
         
+        // Validate the built configuration before attempting to configure
+        try coreSettings.validate()
+        
         do {
             try await Cognitive3DAnalyticsCore.shared.configure(with: coreSettings)
             configureAdvancedSettings()

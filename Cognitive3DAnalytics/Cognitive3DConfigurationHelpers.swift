@@ -191,6 +191,7 @@ public enum Cognitive3DConfigurationError: LocalizedError {
     case invalidBatchSize(parameter: String, value: Int, validRange: ClosedRange<Int>)
     case invalidInterval(parameter: String, value: Double, validRange: ClosedRange<Double>)
     case invalidCoordinateSystem
+    case invalidConfiguration(reason: String)
     case alreadyConfigured
     case configurationInProgress
     
@@ -214,6 +215,8 @@ public enum Cognitive3DConfigurationError: LocalizedError {
             return "Invalid \(parameter): \(value). Must be between \(range.lowerBound) and \(range.upperBound) seconds."
         case .invalidCoordinateSystem:
             return "Invalid coordinate system. Use .leftHanded for Unity compatibility or .rightHanded for native visionOS."
+        case .invalidConfiguration(let reason):
+            return "Configuration error: \(reason)"
         case .alreadyConfigured:
             return "Cognitive3D is already configured. Call reset() before reconfiguring."
         case .configurationInProgress:
@@ -233,6 +236,8 @@ public enum Cognitive3DConfigurationError: LocalizedError {
             return "Use BatchSizeConfig.default for recommended settings or consult the documentation for valid ranges."
         case .invalidCoordinateSystem:
             return "Most visionOS apps should use .leftHanded coordinate system for Unity compatibility."
+        case .invalidConfiguration:
+            return "Check the configuration requirements in the documentation or use the simplified setup methods."
         case .alreadyConfigured:
             return "If you need to reconfigure, call Cognitive3DAnalyticsCore.shared.reset() first."
         case .configurationInProgress:
