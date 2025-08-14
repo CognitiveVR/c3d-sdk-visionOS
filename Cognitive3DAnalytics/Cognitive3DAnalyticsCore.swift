@@ -68,6 +68,7 @@ public enum DeviceProperty {
         vrVendor
 }
 
+@available(*, deprecated, message: "Use Cognitive3DConfigurationError for detailed error information")
 public enum Cognitive3DError: Error {
     case alreadyConfigured
     case notConfigured
@@ -88,7 +89,7 @@ public class Cognitive3DAnalyticsCore {
 
     /// Tracks whether the SDK is fully initialized.
     /// Ensures methods dependent on configuration are not called prematurely.
-    private var isConfigured: Bool = false
+    public var isConfigured: Bool = false
 
     // MARK: - Properties
     internal let arSessionManager = ARSessionManager.shared
@@ -181,7 +182,7 @@ public class Cognitive3DAnalyticsCore {
     // MARK: - Configuration
     public func configure(with settings: CoreSettings) async throws {
         guard !isConfigured else {
-            throw Cognitive3DError.alreadyConfigured
+            throw Cognitive3DConfigurationError.alreadyConfigured
         }
 
         // Step 1: Setup basic logging
@@ -1089,4 +1090,5 @@ extension Cognitive3DAnalyticsCore {
         }
         return defaultPos
     }
+    
 }

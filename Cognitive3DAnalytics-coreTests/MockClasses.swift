@@ -20,7 +20,8 @@ class MockNetworkAPIClient: NetworkAPIClient {
         sceneId: String,
         version: String,
         method: HTTPMethod = .post,
-        body: U? = nil
+        body: U? = nil,
+        timeoutInterval: TimeInterval = 5.0
     ) async throws -> T {
         // Track the request
         lastEndpoint = endpoint
