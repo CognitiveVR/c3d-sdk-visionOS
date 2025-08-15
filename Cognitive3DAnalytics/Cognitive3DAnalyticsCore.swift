@@ -1091,4 +1091,59 @@ extension Cognitive3DAnalyticsCore {
         return defaultPos
     }
     
+    // MARK: - Setup Validation Methods
+    
+    /// Runs comprehensive validation on current configuration
+    /// - Returns: ValidationResult containing all validation outcomes
+    public static func validateCurrentSetup() -> ValidationResult? {
+        let core = shared
+        guard core.isConfigured, let config = core.config else {
+            return nil
+        }
+        
+        // Create temporary CoreSettings from current config for validation
+        let settings = CoreSettings(
+            defaultSceneName: core.currentSceneId,
+            allSceneData: config.allSceneData,
+            apiKey: config.applicationKey,
+            loggingLevel: .warningsAndErrors, // Default since we can't access original
+            isDebugVerbose: false,
+            hmdType: config.hmdType,
+            gazeBatchSize: config.gazeBatchSize,
+            customEventBatchSize: config.customEventBatchSize,
+            sensorDataLimit: config.sensorDataLimit,
+            dynamicDataLimit: config.dynamicDataLimit,
+            gazeInterval: config.gazeInterval,
+            dynamicObjectFileType: config.dynamicObjectFileType,
+            fixationBatchSize: config.fixationBatchSize,
+            isOfflineSupportEnabled: true, // Default assumption
+            sensorAutoSendInterval: config.sensorAutoSendInterval
+        )
+        
+        return Cognitive3DSetupValidator.validateConfiguration(settings)
+    }
+    
+    /// Validates a configuration before setup
+    /// - Parameter settings: CoreSettings to validate
+    /// - Returns: ValidationResult containing all validation outcomes
+    public static func validateConfiguration(_ settings: CoreSettings) -> ValidationResult {
+        return Cognitive3DSetupValidator.validateConfiguration(settings)
+    }
+    
+    /// Quick validation check for basic setup requirements
+    /// - Parameter settings: CoreSettings to validate
+    /// - Returns: Bool indicating if basic setup is valid
+    public static func isConfigurationValid(_ settings: CoreSettings) -> Bool {
+        return Cognitive3DSetupValidator.isBasicSetupValid(settings)
+    }
+    
+    /// Prints validation report for current setup to console
+    public static func printValidationReport() {
+        if let result = validateCurrentSetup() {
+            result.printReport()
+        } else {
+            print("🔍 Cognitive3D Setup Validation Report")
+            print("❌ SDK not configured. Call setup() first.")
+        }
+    }
 }

@@ -163,6 +163,24 @@ public class Cognitive3DBuilder {
         // Validate the built configuration before attempting to configure
         try coreSettings.validate()
         
+        // Run comprehensive setup validation
+        let validationResult = Cognitive3DSetupValidator.validateConfiguration(coreSettings)
+        
+        // Log any validation issues
+        for issue in validationResult.issues {
+            switch issue.severity {
+            case .error:
+                throw Cognitive3DConfigurationError.invalidConfiguration(reason: issue.message)
+            case .warning:
+                // Log warnings but continue
+                print("⚠️ Cognitive3D Setup Warning: \(issue.message)")
+                print("💡 Solution: \(issue.solution)")
+            case .info:
+                // Log info messages in debug mode
+                print("ℹ️ Cognitive3D Setup Info: \(issue.message)")
+            }
+        }
+        
         do {
             try await Cognitive3DAnalyticsCore.shared.configure(with: coreSettings)
             configureAdvancedSettings()

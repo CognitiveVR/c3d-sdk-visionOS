@@ -160,10 +160,77 @@ do {
 
 ## Validation and Debugging
 
-Validate your setup during development:
+### Setup Validation
+
+Validate your configuration before initialization:
 
 ```swift
-// Check if properly configured
+// Validate configuration before setup
+let settings = CoreSettings(...)
+let result = Cognitive3DAnalyticsCore.validateConfiguration(settings)
+
+if result.isValid {
+    print("✅ Configuration is valid")
+    try await core.configure(with: settings)
+} else {
+    // Print detailed validation report
+    result.printReport()
+    
+    // Or handle specific issues
+    for issue in result.issues(withSeverity: .error) {
+        print("❌ \(issue.message)")
+        print("💡 \(issue.solution)")
+    }
+}
+```
+
+### Quick Validation
+
+For simple validation checks:
+
+```swift
+// Quick boolean check
+if Cognitive3DAnalyticsCore.isConfigurationValid(settings) {
+    // Proceed with setup
+} else {
+    // Handle invalid configuration
+    let errors = Cognitive3DSetupValidator.quickValidation(settings)
+    print("Configuration errors: \(errors)")
+}
+```
+
+### Runtime Validation
+
+Check current SDK status:
+
+```swift
+// After SDK is configured
+if let result = Cognitive3DAnalyticsCore.validateCurrentSetup() {
+    result.printReport()
+} else {
+    print("SDK not configured")
+}
+
+// Simple print report
+Cognitive3DAnalyticsCore.printValidationReport()
+```
+
+### Comprehensive Health Check
+
+The setup validator checks:
+
+- ✅ **Configuration validity**: API key format, scene data, batch sizes
+- ✅ **Network connectivity**: Internet access, connection type
+- ✅ **Device capabilities**: ARKit support, visionOS version compatibility  
+- ✅ **Permissions**: Camera access, world sensing permissions
+- ✅ **System resources**: Available storage, memory usage, battery level
+
+### Legacy Debugging
+
+For existing setups:
+
+```swift
+// Check if properly configured (legacy method)
 if Cognitive3DAnalyticsCore.validateSetup() {
     print("✅ SDK configured successfully")
 } else {
