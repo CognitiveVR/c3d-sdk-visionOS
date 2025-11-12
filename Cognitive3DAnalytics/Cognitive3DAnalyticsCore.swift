@@ -187,6 +187,9 @@ public class Cognitive3DAnalyticsCore {
         // Step 1: Setup basic logging
         setupLogging(level: settings.loggingLevel, verbose: settings.isDebugVerbose)
 
+        // debug remove later
+        logger?.info("settings: \(settings)")
+        
         // Step 2: Setup configuration
         setupConfiguration(settings: settings)
 

@@ -31,7 +31,7 @@ internal enum NetworkEnvironment {
             case .staging:
                 return "https://data.c3ddev.com/v0"
             case .dev:
-                return "https://data.cognitive3d.com/v0"
+                return "https://data.c3ddev.com/v0"
             }
         }
         return urlString

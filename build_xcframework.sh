@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# build XCframework for the Swift C3D anaytics SDK
+# build XCframework for the Swift C3D analytics SDK
 
 # Configuration
 FRAMEWORK_NAME="Cognitive3DAnalytics"
