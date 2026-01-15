@@ -19,15 +19,17 @@ import QuartzCore
     @objc optional func arSessionDidUpdateTransform(_ transform: simd_float4x4)
 }
 
-/// Use the AR Session manager to get the transform for the world anchor for the HMD.
+/// Centralized AR session manager providing world tracking for the HMD.
+/// This singleton manages a single ARKit session shared across the SDK to avoid
+/// resource conflicts and duplicate sessions.
 public class ARSessionManager {
     // MARK: - Properties
     private let session = ARKitSession()
     private let worldTracking = WorldTrackingProvider()
-    private let logger = CognitiveLog()
+    private let logger = CognitiveLog(category: "ARSessionManager")
     private var isTracking = false
     private var delegates: [ARSessionDelegate] = []
-    
+
     // MARK: - Singleton
     public static let shared = ARSessionManager()
 
@@ -35,21 +37,29 @@ public class ARSessionManager {
         return isTracking
     }
 
+    /// Returns the current state of the world tracking provider
+    public var worldTrackingState: DataProviderState{
+        return worldTracking.state
+    }
+
     private init() {}
-    
+
     // MARK: - Delegate Management
     public func addDelegate(_ delegate: ARSessionDelegate) {
-        delegates.append(delegate)
+        // Avoid duplicate delegate registrations
+        if !delegates.contains(where: { $0 === delegate }) {
+            delegates.append(delegate)
+        }
     }
-    
+
     public func removeDelegate(_ delegate: ARSessionDelegate) {
         delegates.removeAll { $0 === delegate }
     }
-    
+
     // MARK: - Session Management
     public func startTracking() async {
         guard !isTracking else {
-            logger.warning("ARSessionManager: Tracking already active")
+            logger.warning("Tracking already active")
             return
         }
 
@@ -62,7 +72,7 @@ public class ARSessionManager {
             logger.error("Failed to start ARKit session: \(error.localizedDescription)")
         }
     }
-    
+
     public func stopTracking() {
         isTracking = false
     }
@@ -71,7 +81,7 @@ public class ARSessionManager {
     private func startUpdates() {
         Task {
             while isTracking && !Task.isCancelled {
-                if let transform = getCurrentTransform() {
+                if let transform = getTransform() {
                     let position = transform.position.toDouble()
                     for delegate in delegates {
                         delegate.arSessionDidUpdatePosition?(position)
@@ -82,22 +92,36 @@ public class ARSessionManager {
             }
         }
     }
-    
+
     // MARK: - Transform Access
-    private func getCurrentTransform() -> simd_float4x4? {
+
+    /// Get the current device transform. Returns nil if tracking is not running.
+    public func getTransform() -> simd_float4x4? {
         guard isTracking,
               worldTracking.state == .running,
               let deviceAnchor = worldTracking.queryDeviceAnchor(atTimestamp: CACurrentMediaTime()) else {
             return nil
         }
 
-        // Return the transform for the HMD device.
+        return deviceAnchor.originFromAnchorTransform
+    }
+
+    /// Query device anchor at a specific timestamp.
+    /// - Parameter timestamp: The timestamp to query the device anchor at
+    /// - Returns: The device transform at the specified time, or nil if unavailable
+    public func queryDeviceTransform(atTimestamp timestamp: TimeInterval) -> simd_float4x4? {
+        guard isTracking,
+              worldTracking.state == .running,
+              let deviceAnchor = worldTracking.queryDeviceAnchor(atTimestamp: timestamp) else {
+            return nil
+        }
+
         return deviceAnchor.originFromAnchorTransform
     }
 
     /// Get the position from the current device transform.
     public func getPosition() -> [Double]? {
-        guard let transform = getCurrentTransform() else {
+        guard let transform = getTransform() else {
             return nil
         }
         return transform.position.toDouble()

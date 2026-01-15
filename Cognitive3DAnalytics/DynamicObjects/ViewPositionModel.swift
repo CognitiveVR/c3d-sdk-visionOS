@@ -70,10 +70,24 @@ public class ViewPositionModel {
             Float(transform.translation.z)
         )
 
+        // Extract rotation quaternion for offset calculation
+        let rotation: simd_quatf?
+        if let quaternion = transform.rotation?.quaternion {
+            rotation = simd_quatf(
+                ix: Float(quaternion.imag.x),
+                iy: Float(quaternion.imag.y),
+                iz: Float(quaternion.imag.z),
+                r: Float(quaternion.real)
+            )
+        } else {
+            rotation = nil
+        }
+
         let convertedPosition = convertPositionToMetric(simdPosition,
                                                      using: metricsConverter,
                                                      size: size,
-                                                     useOffset: useOffset)
+                                                     useOffset: useOffset,
+                                                     rotation: rotation)
 
         entity.position = convertedPosition
     }
@@ -162,11 +176,14 @@ public class ViewPositionModel {
         )
     }
 
-    /// Convert position with optional offset to account for anchor point differences
+    /// Convert position with optional offset to account for anchor point differences.
+    /// The offset is rotated by the window's rotation to ensure correct positioning
+    /// when the window is rotated around the user.
     func convertPositionToMetric(_ vector: SIMD3<Float>,
                                using converter: PhysicalMetricsConverter,
                                size: SIMD3<Float>,
-                               useOffset: Bool) -> SIMD3<Float> {
+                               useOffset: Bool,
+                               rotation: simd_quatf? = nil) -> SIMD3<Float> {
         let convertedPosition = convertPointsToMetric(vector, using: converter)
 
         if !useOffset {
@@ -180,11 +197,18 @@ public class ViewPositionModel {
             convertedSize.z
         )
 
-        return SIMD3<Float>(
-            convertedPosition.x + (adjustedSize.x / 2.0),
-            // Coordinate space conversion from top left origin hence the -ve
-            convertedPosition.y - (adjustedSize.y / 2.0),
-            convertedPosition.z
+        // Create offset in local space (from top-left to center anchor)
+        var offset = SIMD3<Float>(
+            adjustedSize.x / 2.0,
+            -adjustedSize.y / 2.0,
+            0
         )
+
+        // Rotate offset by window rotation if available
+        if let rotation = rotation {
+            offset = rotation.act(offset)
+        }
+
+        return convertedPosition + offset
     }
 }

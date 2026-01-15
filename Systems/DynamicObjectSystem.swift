@@ -144,12 +144,12 @@ public final class DynamicObjectSystem: System {
 
     // Required initializer for RealityKit System
     public required init(scene: Scene) {
-        guard let dynamicManager = Cognitive3DAnalyticsCore.shared.dynamicDataManager else {
-            dynamicManager = nil
+        guard let manager = Cognitive3DAnalyticsCore.shared.dynamicDataManager else {
+            // No dynamic manager available - system will be inactive
             return
         }
 
-        self.dynamicManager = dynamicManager
+        self.dynamicManager = manager
 
         // Subscribe to session events
         Cognitive3DAnalyticsCore.shared.sessionEventPublisher

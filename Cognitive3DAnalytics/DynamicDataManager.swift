@@ -126,17 +126,21 @@ public actor DynamicDataManager {
         // If we have an active session, immediately send the initial enabled state
         if let core = self.core, core.isSessionActive {
             // Create a placeholder state for this object if it doesn't exist
-            if lastStates[id] == nil {
-                lastStates[id] = DynamicObjectState()
+            let state: DynamicObjectState
+            if let existingState = lastStates[id] {
+                state = existingState
+            } else {
+                state = DynamicObjectState()
+                lastStates[id] = state
             }
 
             // Force send the initial enabled:true property
             let initialProperties = [["enabled": AnyCodable(true)]]
             await recordDynamicObject(
                 id: id,
-                position: lastStates[id]!.lastPosition,
-                rotation: lastStates[id]!.lastRotation,
-                scale: lastStates[id]!.lastScale,
+                position: state.lastPosition,
+                rotation: state.lastRotation,
+                scale: state.lastScale,
                 positionThreshold: 0,
                 rotationThreshold: 0,
                 scaleThreshold: 0,
@@ -547,9 +551,38 @@ public actor DynamicDataManager {
     // MARK: - Session Management
     internal func endSession() async {
         await sendData()
+        await clearEngagements()
+        cleanupStaleEntries()
         queuedEvents.removeAll()
         pendingManifestUpdates.removeAll()
         jsonPart = 1
+    }
+
+    // MARK: - State Cleanup
+
+    /// Removes stale entries from lastStates that are no longer in activeManifests.
+    /// This prevents memory growth from accumulated state entries of removed objects.
+    private func cleanupStaleEntries() {
+        let activeIds = Set(activeManifests.keys)
+        let staleIds = Set(lastStates.keys).subtracting(activeIds)
+
+        if !staleIds.isEmpty {
+            for id in staleIds {
+                lastStates.removeValue(forKey: id)
+            }
+            logger.verbose("Cleaned up \(staleIds.count) stale state entries")
+        }
+    }
+
+    /// Performs periodic cleanup of stale entries. Call this during session pauses
+    /// or at regular intervals to prevent memory growth.
+    public func performMaintenanceCleanup() {
+        cleanupStaleEntries()
+
+        // Also clean up gaze sync tracking for objects that are no longer active
+        let activeIds = Set(activeManifests.keys)
+        syncedObjects = syncedObjects.intersection(activeIds)
+        gazeSyncUpdates = gazeSyncUpdates.filter { activeIds.contains($0.key) }
     }
 
     // MARK: - gaze sync'ing

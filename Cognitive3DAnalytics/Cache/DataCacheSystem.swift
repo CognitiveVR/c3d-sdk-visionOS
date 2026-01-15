@@ -74,8 +74,18 @@ public actor DataCacheSystem {
     /// In-memory cache as fallback when file cache isn't available
     private var inMemoryCache = [(destination: String, body: String)]()
 
-    /// Interval (in seconds) to wait before retrying uploads after a network error.
-    static let backoffInterval: TimeInterval = 10.0
+    // MARK: - Exponential Backoff Configuration
+    /// Base interval (in seconds) to wait before retrying uploads after a network error
+    private static let baseBackoffInterval: TimeInterval = 10.0
+    /// Maximum backoff interval to prevent excessively long waits
+    private static let maxBackoffInterval: TimeInterval = 300.0  // 5 minutes
+    /// Multiplier for exponential growth
+    private static let backoffMultiplier: Double = 2.0
+
+    /// Current backoff interval, increases exponentially on consecutive failures
+    private var currentBackoffInterval: TimeInterval = baseBackoffInterval
+    /// Number of consecutive upload failures
+    private var consecutiveFailures: Int = 0
     private var lastErrorTime: Date?
     private var isUploading = false
     private var isInitialized = false
@@ -197,11 +207,11 @@ public actor DataCacheSystem {
             return false
         }
 
-        // Check if we're in backoff period after an error
+        // Check if we're in backoff period after an error (using exponential backoff)
         if let lastError = lastErrorTime,
-           Date().timeIntervalSince1970 - lastError.timeIntervalSince1970 < DataCacheSystem.backoffInterval {
-            // We're in backoff period, cache directly without attempting network request
-            logger.info("In backoff period after error, caching request without network attempt")
+           Date().timeIntervalSince1970 - lastError.timeIntervalSince1970 < currentBackoffInterval {
+            let remainingTime = currentBackoffInterval - (Date().timeIntervalSince1970 - lastError.timeIntervalSince1970)
+            logger.info("In backoff period (\(String(format: "%.1f", remainingTime))s remaining), caching request")
             await cacheRequest(url: url, body: body)
             return false
         }
@@ -212,6 +222,8 @@ public actor DataCacheSystem {
         let success = await uploadCachedRequestAsync(url: url, body: body)
 
         if success {
+            // Reset backoff on success
+            resetBackoff()
             // If successful, try uploading any cached content
             logger.info("Request to '\(url.lastPathComponent)' successful, attempting to upload cached content")
             if shouldAttemptUpload {
@@ -219,12 +231,32 @@ public actor DataCacheSystem {
             }
             return true
         } else {
-            // Cache the failed request
-            logger.info("Request to '\(url.lastPathComponent)' failed, caching for later upload")
+            // Cache the failed request and increase backoff
+            incrementBackoff()
+            logger.info("Request to '\(url.lastPathComponent)' failed, caching for later upload. Next retry in \(String(format: "%.0f", currentBackoffInterval))s")
             lastErrorTime = Date()
             await cacheRequest(url: url, body: body)
             return false
         }
+    }
+
+    // MARK: - Backoff Management
+
+    /// Reset backoff to initial values after successful upload
+    private func resetBackoff() {
+        consecutiveFailures = 0
+        currentBackoffInterval = DataCacheSystem.baseBackoffInterval
+        logger.verbose("Backoff reset to base interval")
+    }
+
+    /// Increase backoff interval after a failure using exponential growth
+    private func incrementBackoff() {
+        consecutiveFailures += 1
+        currentBackoffInterval = min(
+            DataCacheSystem.baseBackoffInterval * pow(DataCacheSystem.backoffMultiplier, Double(consecutiveFailures)),
+            DataCacheSystem.maxBackoffInterval
+        )
+        logger.verbose("Backoff increased to \(String(format: "%.0f", currentBackoffInterval))s after \(consecutiveFailures) failures")
     }
 
     /// Send a request and also immediately cache it (for cases like session ending)
@@ -273,12 +305,12 @@ public actor DataCacheSystem {
                 return
             }
 
-            // Write to the cache using the DualFileCache - check result
+            // Write to the cache using the DualFileCache
             let writeSuccess = cache.writeContent(destination: url.absoluteString, body: bodyString)
             if writeSuccess {
-                print("data written to cache for \(url.absoluteString)")
+                logger.verbose("Data written to cache for \(url.lastPathComponent)")
             } else {
-                print("did NOT write to cache for \(url.absoluteString)")
+                logger.warning("Failed to write to cache for \(url.lastPathComponent)")
             }
         } else {
             // Using in-memory cache as a fallback
@@ -409,6 +441,9 @@ public actor DataCacheSystem {
         let success = await uploadCachedRequestAsync(url: url, body: bodyData)
 
         if success {
+            // Reset backoff on success
+            resetBackoff()
+
             // Success, remove entry from cache
             if fromInMemoryCache {
                 if !inMemoryCache.isEmpty {
@@ -421,9 +456,13 @@ public actor DataCacheSystem {
             // Continue with next entry
             await uploadNextCachedEntry()
         } else {
+            // Increment backoff on failure
+            incrementBackoff()
+            lastErrorTime = Date()
+
             // Failed, stop uploading for now
             isUploading = false
-            logger.info("Stopping upload process due to failure, setting upload flag to false")
+            logger.info("Stopping upload process due to failure. Next retry in \(String(format: "%.0f", currentBackoffInterval))s")
         }
     }
 

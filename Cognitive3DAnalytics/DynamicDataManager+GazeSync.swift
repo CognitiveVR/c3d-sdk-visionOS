@@ -7,16 +7,9 @@
 
 import Foundation
 
-// MARK: - ManifestEntry Extension
-extension ManifestEntry {
-    /// Whether this object should sync its updates with gaze tracking
-    public var syncWithGaze: Bool {
-        // Default implementation returns false, actual value should be set during object registration
-        return false
-    }
-}
-
 // MARK: - DynamicDataManager Extension
+// Note: Gaze sync is controlled via DynamicComponent.syncWithGaze property on each entity,
+// not through ManifestEntry. The syncedObjects set tracks which objects are gaze-synced.
 extension DynamicDataManager: GazeSyncDelegate {
 
     /// Set whether a dynamic object should sync with gaze updates

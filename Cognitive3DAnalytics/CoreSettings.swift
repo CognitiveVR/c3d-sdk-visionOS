@@ -74,7 +74,7 @@ public class CoreSettings {
         dynamicObjectFileType: String = gltfFileType,
         fixationBatchSize: Int = 32,
         isOfflineSupportEnabled: Bool = true,
-        sensorAutoSendInterval: Double = 20.0
+        sensorAutoSendInterval: Double = 2.0
     ) {
         self.defaultSceneName = defaultSceneName
         self.allSceneData = allSceneData
