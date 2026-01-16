@@ -57,7 +57,7 @@ public class CoreSettings {
     public var isHandTrackingRequired = false
 
     /// Sensor auto-send timer interval in seconds
-    public var sensorAutoSendInterval: Double = 2.0
+    public var sensorAutoSendInterval: Double = 10.0 //Set to 10 in here and config.swift
 
     public init(
         defaultSceneName: String = "",
@@ -74,7 +74,7 @@ public class CoreSettings {
         dynamicObjectFileType: String = gltfFileType,
         fixationBatchSize: Int = 32,
         isOfflineSupportEnabled: Bool = true,
-        sensorAutoSendInterval: Double = 2.0
+        sensorAutoSendInterval: Double = 10.0 //change here aswell 
     ) {
         self.defaultSceneName = defaultSceneName
         self.allSceneData = allSceneData
