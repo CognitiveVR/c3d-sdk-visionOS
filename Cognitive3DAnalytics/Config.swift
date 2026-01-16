@@ -4,7 +4,7 @@
 //
 //  Created by Calder Archinuk on 2024-11-18.
 //
-// Copyright (c) 2024 Cognitive3D, Inc. All rights reserved.
+// Copyright (c) 2024-2025 Cognitive3D, Inc. All rights reserved.
 //
 
 import Foundation
@@ -35,17 +35,17 @@ public class Config {
     ///  The Application API key is set by the application that has integrated the C3D analytics framework.
     var applicationKey: String = ""
 
-    var gazeBatchSize: Int = 256
-    var fixationBatchSize: Int = 128
-    var customEventBatchSize: Int = 64
-    var sensorDataLimit: Int = 128
-    var dynamicDataLimit: Int = 128
+    var gazeBatchSize: Int = 32
+    var fixationBatchSize: Int = 32
+    var customEventBatchSize: Int = 32
+    var sensorDataLimit: Int = 32
+    var dynamicDataLimit: Int = 32
 
     /// The type for objects that get uploaded, at this time there is no native support for GLTF in visonOS.
     var dynamicObjectFileType: String = gltfFileType
 
     /// The frequency at which gaze events get recorded.
-    var gazeInterval: Float = 0.2
+    var gazeInterval: Float = 0.1
 
     /// Controls if the recorded coordinates need to be converted; visionOS is right handed.
     var targetCoordinateSystem: CoordinateSystem = .leftHanded
@@ -57,7 +57,7 @@ public class Config {
     var isRecordingPitch: Bool = true
 
     /// Controls whether headset yaw data should be recorded during sessions.
-    var isRecordingYaw: Bool = true
+    var isRecordingYaw: Bool = false
 
     /// Controls whether battery levels should be recorded during sessions.
     var isRecordingBatteryLevel: Bool = true
@@ -84,4 +84,9 @@ public class Config {
 
     /// If the Internet connection becomes unavailable & there is data to send later this can be used to monitor the Internconenctivity.
     public var useSyncServices = false
+
+    public var isHandTrackingRequired = false
+
+    /// Sensor auto-send timer interval in seconds (configurable at runtime)
+    var sensorAutoSendInterval: Double = 10.0
 }

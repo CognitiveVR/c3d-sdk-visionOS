@@ -9,15 +9,16 @@ import Foundation
 
 /// Manages caching of exit poll questions
 class ExitPollCache {
-    private let cacheFilename: String
+    private let path: String
 
     init(path: String) {
-        self.cacheFilename = path + "exitpoll_questions.json"
+        self.path = path
     }
 
     /// Cache exit poll questions for offline use
     /// - Parameter questionsData: The questions JSON data
-    func cacheQuestions(_ questionsData: Data) {
+    func cacheQuestions(hook: String,  questionsData: Data) {
+        let cacheFilename = "\(path)/\(hook).json"
         do {
             try questionsData.write(to: URL(fileURLWithPath: cacheFilename))
         } catch {
@@ -27,7 +28,8 @@ class ExitPollCache {
 
     /// Get cached exit poll questions
     /// - Returns: The cached questions data if available
-    func getCachedQuestions() -> Data? {
+    func getCachedQuestions(hook: String) -> Data? {
+        let cacheFilename = "\(path)/\(hook).json"
         guard FileManager.default.fileExists(atPath: cacheFilename) else {
             return nil
         }

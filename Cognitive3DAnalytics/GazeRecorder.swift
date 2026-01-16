@@ -4,7 +4,7 @@
 //
 //  Created by Cognitive3D on 2024-12-02.
 //
-//  Copyright (c) 2024 Cognitive3D, Inc. All rights reserved.
+//  Copyright (c) 2024-2025 Cognitive3D, Inc. All rights reserved.
 //
 
 import ARKit
@@ -22,8 +22,8 @@ public protocol GazeRecorderDelegate: AnyObject {
     func gazeTrackerDidUpdate(_ data: GazeEventData)
 }
 
-/// The `GazeRecorder` is one of the primary recorders in the C3D analytics SDK.  It records where the HMD is currently looking using world tracking with an `ARSession`.
-/// See also the class ``ARSessionManager``.
+/// The `GazeRecorder` is one of the primary recorders in the C3D analytics SDK.
+/// It records where the HMD is currently looking using world tracking via `ARSessionManager`.
 @Observable public class GazeRecorder {
     // MARK: - Properties
     private let dataManager: GazeDataManager
@@ -38,24 +38,20 @@ public protocol GazeRecorderDelegate: AnyObject {
     private var lastDebugTime: TimeInterval = 0
     private var updateCount: Int = 0
 
-    /// local override for debugging, setting this to true can produce a signifcant amount of debug
+    /// local override for debugging, setting this to true can produce a significant amount of debug
     private let isDebugVerbose = false
-    private let logInterval: TimeInterval = 10.0  // Log stats every 10 seconda
+    private let logInterval: TimeInterval = 10.0  // Log stats every 10 seconds
 
     // We only want to report this once.
-    private var hasLoggedCollisionCheck = false
+    private var hasLoggedWarning = false
 
     // Convert gazeInterval to Double for consistent timing calculations
     private var gazeIntervalSeconds: TimeInterval {
         TimeInterval(config.gazeInterval)
     }
 
-    /// ARKit tracking
-    // TODO: use a single AR Kit session in the analytics SDK
-    private let session = ARKitSession()
-
-    /// The world tracking provider gets queried to get the positional data for the world anchor for the headset.
-    private let worldTracking = WorldTrackingProvider()
+    /// Reference to the shared AR session manager for world tracking
+    private let arSessionManager = ARSessionManager.shared
 
     // Task handle for continuous tracking
     private var trackingTask: Task<Void, Error>?
@@ -84,23 +80,19 @@ public protocol GazeRecorderDelegate: AnyObject {
             return
         }
 
-        if core.contentEntity != nil {
-            logger.warning("GazeTracker: cannot do collision raycasts without a contentEntity set")
+        // Use the shared AR session manager instead of creating a new session
+        if !arSessionManager.isTrackingActive {
+            await arSessionManager.startTracking()
         }
 
-        do {
-            try await session.run([worldTracking])
-            logger.verbose("ARKit session started successfully")
-            isTracking = true
-            lastLogTime = Date().timeIntervalSince1970
-            lastDebugTime = lastLogTime
-            updateCount = 0
+        logger.verbose("Using shared ARKit session for gaze tracking")
+        isTracking = true
+        lastLogTime = Date().timeIntervalSince1970
+        lastDebugTime = lastLogTime
+        updateCount = 0
 
-            trackingTask = Task {
-                await startContinuousTracking()
-            }
-        } catch {
-            logger.error("Failed to start ARKit session: \(error.localizedDescription)")
+        trackingTask = Task {
+            await startContinuousTracking()
         }
     }
 
@@ -135,7 +127,6 @@ public protocol GazeRecorderDelegate: AnyObject {
         ]
     }
 
-
     /// Stop gaze tracking.
     public func stopTracking() {
         if isTracking {
@@ -168,14 +159,16 @@ public protocol GazeRecorderDelegate: AnyObject {
         let deviceTransform = await getDeviceTransform()
         let trackingData = extractTrackingData(from: deviceTransform, timestamp: Date().timeIntervalSince1970)
 
-        if let scene = await core.contentEntity?.scene {
-            if !hasLoggedCollisionCheck {
+        if let scene = await core.entity?.scene {
+            if !hasLoggedWarning {
                 logger.verbose("collision check using raycast length of \(config.raycastLength)")
-                hasLoggedCollisionCheck = true
+                hasLoggedWarning = true
             }
 
             if let collision = checkCollision(scene: scene, deviceTransform: deviceTransform) {
+                #if DEBUG_GAZES
                 logger.verbose("collision with \(collision.objectId)")
+                #endif
                 let newData = GazeEventData(
                     time: trackingData.time,
                     floorPosition: trackingData.floorPosition,
@@ -191,13 +184,21 @@ public protocol GazeRecorderDelegate: AnyObject {
                 await core.gazeSyncManager.notifyGazeTick()
                 return
             }
+
+            dataManager.recordGaze(trackingData)
+            delegate?.gazeTrackerDidUpdate(trackingData)
+
+            // Notify gaze sync
+            await core.gazeSyncManager.notifyGazeTick()
+        } else {
+            dataManager.recordGaze(trackingData)
+            delegate?.gazeTrackerDidUpdate(trackingData)
+
+            if !hasLoggedWarning {
+                logger.warning("Gaze tracking & ray casts: scene is not available yet.\nThe RealityView contents may not be fully loaded yet.")
+                hasLoggedWarning = true
+            }
         }
-
-        dataManager.recordGaze(trackingData)
-        delegate?.gazeTrackerDidUpdate(trackingData)
-
-        // Notify gaze sync
-        await core.gazeSyncManager.notifyGazeTick()
     }
 
     /// Create a raycast based on the gaze and check for collision hits in the scene.
@@ -309,25 +310,25 @@ public protocol GazeRecorderDelegate: AnyObject {
     }
 
     private func getDeviceTransform() async -> simd_float4x4 {
-        guard worldTracking.state == .running,
-            let deviceAnchor = worldTracking.queryDeviceAnchor(atTimestamp: CACurrentMediaTime())
-        else {
+        guard let transform = arSessionManager.queryDeviceTransform(atTimestamp: CACurrentMediaTime()) else {
             return .init()
         }
-        return deviceAnchor.originFromAnchorTransform
+        return transform
     }
 
     private func startContinuousTracking() async {
-        logger.info("🌐 Starting continuous tracking - interval: \(String(format: "%.1f", gazeIntervalSeconds))s (ARKit session started)")
+        logger.info(
+            "Starting continuous tracking - interval: \(String(format: "%.1f", gazeIntervalSeconds))s"
+        )
 
         var hasLoggedTrackingWarning = false
 
         while isTracking && !Task.isCancelled {
             let updateStart = Date().timeIntervalSince1970
 
-            guard worldTracking.state == .running else {
+            guard arSessionManager.worldTrackingState == .running else {
                 if !hasLoggedTrackingWarning {
-                    logger.warning("🌐 World tracking is not running - waiting for immersive mode")
+                    logger.warning("World tracking is not running - waiting for immersive mode")
                     hasLoggedTrackingWarning = true
                 }
                 try? await Task.sleep(for: .seconds(0.5))
@@ -335,7 +336,7 @@ public protocol GazeRecorderDelegate: AnyObject {
             }
 
             if hasLoggedTrackingWarning {
-                logger.info("🌐 World tracking has resumed running")
+                logger.info("World tracking has resumed running")
             }
 
             hasLoggedTrackingWarning = false
@@ -352,7 +353,7 @@ public protocol GazeRecorderDelegate: AnyObject {
             try? await Task.sleep(for: .seconds(sleepDuration))
         }
 
-        logger.info("🌐 Continuous tracking stopped")
+        logger.info("Continuous tracking stopped")
     }
 
     private func logDebugInfo(_ data: GazeEventData) {

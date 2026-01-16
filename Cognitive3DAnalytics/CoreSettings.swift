@@ -4,7 +4,7 @@
 //
 //  Created by Manjit Bedi on 2024-12-04.
 //
-//  Copyright (c) 2024 Cognitive3D, Inc. All rights reserved.
+//  Copyright (c) 2024-2025 Cognitive3D, Inc. All rights reserved.
 //
 
 import Foundation
@@ -26,13 +26,13 @@ public class CoreSettings {
     
     public var hmdType: String = ""
 
-    public var gazeBatchSize: Int = 64
+    public var gazeBatchSize: Int = 32
 
-    public var customEventBatchSize: Int = 64
+    public var customEventBatchSize: Int = 32
 
-    public var sensorDataLimit: Int = 64
+    public var sensorDataLimit: Int = 32
 
-    public var dynamicDataLimit: Int = 64
+    public var dynamicDataLimit: Int = 32
 
     public var gazeInterval: Double = 0.1
 
@@ -40,7 +40,7 @@ public class CoreSettings {
     public var dynamicObjectFileType: String = gltfFileType
 
     /// Fixation batch size - currently unused
-    public var fixationBatchSize: Int = 64
+    public var fixationBatchSize: Int = 32
 
     /// Set this to true to activate network connectivity monitoring and offline data handling.
     public var isOfflineSupportEnabled: Bool = true
@@ -54,6 +54,11 @@ public class CoreSettings {
     /// Enable verbose network logging
     public var isNetworkLoggingVerbose: Bool = false
 
+    public var isHandTrackingRequired = false
+
+    /// Sensor auto-send timer interval in seconds
+    public var sensorAutoSendInterval: Double = 10.0 //Set to 10 in here and config.swift
+
     public init(
         defaultSceneName: String = "",
         allSceneData: [SceneData] = [],
@@ -61,14 +66,15 @@ public class CoreSettings {
         loggingLevel: LogLevel = .all,
         isDebugVerbose: Bool = false,
         hmdType: String = "",
-        gazeBatchSize: Int = 64,
-        customEventBatchSize: Int = 64,
-        sensorDataLimit: Int = 64,
-        dynamicDataLimit: Int = 64,
+        gazeBatchSize: Int = 32,
+        customEventBatchSize: Int = 32,
+        sensorDataLimit: Int = 32,
+        dynamicDataLimit: Int = 32,
         gazeInterval: Double = 0.1,
-        dynamicObjectFileType: String = "GLTF",
-        fixationBatchSize: Int = 64,
-        isOfflineSupportEnabled: Bool = true
+        dynamicObjectFileType: String = gltfFileType,
+        fixationBatchSize: Int = 32,
+        isOfflineSupportEnabled: Bool = true,
+        sensorAutoSendInterval: Double = 10.0 //change here aswell 
     ) {
         self.defaultSceneName = defaultSceneName
         self.allSceneData = allSceneData
@@ -84,5 +90,6 @@ public class CoreSettings {
         self.dynamicObjectFileType = dynamicObjectFileType
         self.fixationBatchSize = fixationBatchSize
         self.isOfflineSupportEnabled = isOfflineSupportEnabled
+        self.sensorAutoSendInterval = sensorAutoSendInterval
     }
 }

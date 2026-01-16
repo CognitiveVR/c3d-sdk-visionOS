@@ -121,9 +121,9 @@ public class DualFileCache: CacheProtocol {
         do {
             readFileHandle = try FileHandle(forUpdating: URL(fileURLWithPath: readFilename))
             writeFileHandle = try FileHandle(forUpdating: URL(fileURLWithPath: writeFilename))
-            logger.info("Successfully created file handles")
+            logger.verbose("local data cache: successfully created file handles")
         } catch {
-            logger.error("Failed to create file handles: \(error.localizedDescription)")
+            logger.error("local data cache: failed to create file handles: \(error.localizedDescription)")
             throw DualFileCacheError.fileHandleCreationFailed
         }
     }
@@ -143,7 +143,7 @@ public class DualFileCache: CacheProtocol {
             // Each batch is two lines (URL and body)
             numberOfWriteBatches = lines.count / 2
 
-            logger.info("Counted \(numberOfWriteBatches) batches in write file")
+            logger.verbose("Counted \(numberOfWriteBatches) batches in write file")
         } catch {
             logger.error("Failed to count write batches: \(error.localizedDescription)")
             numberOfWriteBatches = 0

@@ -4,10 +4,12 @@
 //
 //  Created by Calder Archinuk on 2024-11-18.
 //
-//  Copyright (c) 2024 Cognitive3D, Inc. All rights reserved.
+//  Copyright (c) 2024-2025 Cognitive3D, Inc. All rights reserved.
 //
 
+import Combine
 import Foundation
+import OSLog
 import ObjectiveC
 import Observation
 import RealityKit
@@ -33,6 +35,11 @@ public enum SessionState {
 
     /// The current session has been ended from the application going in to the background.
     case endedBackground
+}
+
+@frozen public enum SessionEvent {
+    case started(sessionId: String)
+    case ended(sessionId: String, state: SessionState)
 }
 
 /// Delegate protocol for when analytics session ends.
@@ -142,8 +149,11 @@ public class Cognitive3DAnalyticsCore {
 
     internal let defaultPos: [Double] = [0, 0, 0]
 
-    /// The entity for the scene is used with the gaze tracker.
-    public var contentEntity: Entity?
+    /// The scene is used with the gaze tracker for doing ray casts with dynamic object entities.
+    public var entity: Entity?
+    /// The scene is used when doing ray casts with dynamic objects.
+    // TODO: refactor - ideally, store the scene but it's not known until sometime after a RealityView has rendered.
+    public var scene: RealityKit.Scene?
 
     internal var networkClient: NetworkAPIClient?
 
@@ -160,6 +170,14 @@ public class Cognitive3DAnalyticsCore {
 
     private var networkDataCacheDelegate: NetworkDataCacheDelegate?
 
+    public let sessionEventPublisher = PassthroughSubject<SessionEvent, Never>()
+
+    /// Component for esimateing the HMD height
+    private var hmdHeight: HmdHeight?
+
+    /// Component for hand tracking if enabled by the user
+    private var handTracking: HandTracking?
+
     // MARK: - Configuration
     public func configure(with settings: CoreSettings) async throws {
         guard !isConfigured else {
@@ -169,6 +187,9 @@ public class Cognitive3DAnalyticsCore {
         // Step 1: Setup basic logging
         setupLogging(level: settings.loggingLevel, verbose: settings.isDebugVerbose)
 
+        // debug remove later
+        logger?.info("settings: \(settings)")
+        
         // Step 2: Setup configuration
         setupConfiguration(settings: settings)
 
@@ -188,14 +209,27 @@ public class Cognitive3DAnalyticsCore {
         setupSceneData(settings: settings)
 
         // Step 8: Setup network logging
-        #if DEBUG
-        enableNetworkLogging(enabled: true, maxRecords: 100, isVerboseLogging: settings.isDebugVerbose)
+        #if DEBUG && ENABLE_NETWORK_LOGGING
+            logger?.info("DEBUG build, network request logging will be activated")
+            enableNetworkLogging(enabled: true, maxRecords: 100, isVerboseLogging: settings.isDebugVerbose)
         #endif
 
         // Step 9: Setup connectivity support if needed
         if settings.isOfflineSupportEnabled {
             await setupConnectivitySupport()
         }
+
+        self.hmdHeight = HmdHeight()
+
+        // Hand tracking works only on a device.
+        #if !targetEnvironment(simulator)
+            if let config = self.config, config.isHandTrackingRequired {
+                HandTracking.setup(core: self)
+                Task {
+                    await HandTracking.runSession()
+                }
+            }
+        #endif
 
         isConfigured = true
         logger?.info("Cognitive3DAnalyticsCore configuration completed")
@@ -223,6 +257,8 @@ public class Cognitive3DAnalyticsCore {
         config?.gazeInterval = Float(settings.gazeInterval)
         config?.dynamicObjectFileType = settings.dynamicObjectFileType
         config?.fixationBatchSize = settings.fixationBatchSize
+        config?.isHandTrackingRequired = settings.isHandTrackingRequired
+        config?.sensorAutoSendInterval = settings.sensorAutoSendInterval
     }
 
     private func setupDeviceIdentifier() {
@@ -280,7 +316,6 @@ public class Cognitive3DAnalyticsCore {
         }
     }
 
-
     private func setupSceneData(settings: CoreSettings) {
         config?.allSceneData = settings.allSceneData
         if !settings.defaultSceneName.isEmpty {
@@ -297,6 +332,20 @@ public class Cognitive3DAnalyticsCore {
     /// This method will start various recorders like the gaze recorder.
     ///  Note: in visionOS, gazes are recorded when an immersive space is opened.  The start session method will post an empty gaze record to get the manadatory session properties sent to the C3D back end.
     public func startSession() async -> Bool {
+
+        guard isConfigured else {
+            let error = "Attempted to start session when the C3D SDK is not configured"
+            if logger != nil {
+                logger?.error(error)
+            } else {
+                // The Cognitive logger instance is not available...
+                // Note: the Cognitive logger (above) is a wrapper around the OS Logger.
+                let osLogger = Logger(subsystem: "com.cognitive3d.analytics", category: "default")
+                osLogger.error("Error: \(error)")
+            }
+            return false
+        }
+
         guard !isSessionActive else {
             logger?.warning("Attempted to start an already active session")
             return false
@@ -330,7 +379,7 @@ public class Cognitive3DAnalyticsCore {
         let position = coordSystem.convertPosition(getCurrentHMDPosition())
 
         guard
-             eventRecorder.recordEvent(
+            eventRecorder.recordEvent(
                 name: "c3d.sessionStart",
                 position: position,
                 properties: [:],
@@ -355,9 +404,19 @@ public class Cognitive3DAnalyticsCore {
 
         startSensorRecorders()
 
+        #if !targetEnvironment(simulator)
+            if let config = self.config, config.isHandTrackingRequired {
+                // Register hands as dynamic objects.
+                HandTracking.configure()
+            }
+        #endif
+
+        sessionEventPublisher.send(.started(sessionId: getSessionId()))
+
         return true
     }
 
+    @discardableResult
     public func endSession() async -> Bool {
         guard isSessionActive else {
             logger?.info("Cannot end session, not active")
@@ -374,7 +433,8 @@ public class Cognitive3DAnalyticsCore {
         let position = coordSystem.convertPosition(getCurrentHMDPosition())
 
         // Record session end
-        guard eventRecorder.recordEvent(
+        guard
+            eventRecorder.recordEvent(
                 name: "c3d.sessionEnd",
                 position: position,
                 properties: ["sessionlength": getTimestamp() - getSessionTimestamp()],
@@ -385,6 +445,10 @@ public class Cognitive3DAnalyticsCore {
             return false
         }
 
+        // Stop sensor recording like the frame rate.
+        stopSensorRecorders()
+
+        // Now end the sessions which will post the data to the back end.
         endSessionRecorders()
 
         await sendData()
@@ -397,7 +461,10 @@ public class Cognitive3DAnalyticsCore {
     private func cleanUp() async {
         isSessionActive = false
 
-        cleanupIdleDetection()
+        // Notify subscribers
+        sessionEventPublisher.send(.ended(sessionId: sessionId, state: sessionState))
+
+        cleanUpIdleDetection()
 
         // Post any data that have been recorded.
         await customEventRecorder?.endSession()
@@ -406,7 +473,7 @@ public class Cognitive3DAnalyticsCore {
         await dynamicDataManager?.clearEngagements()
         await sensorRecorder?.endSession()
 
-        stopSenorRecorders()
+        stopSensorRecorders()
 
         sessionTimestamp = -1
         // Now we can clear the sssion id.
@@ -437,6 +504,8 @@ public class Cognitive3DAnalyticsCore {
     func startSensorRecorders() {
         logger?.verbose("start internal sensor recorders")
 
+        sensorRecorder?.startSessionTimer()
+
         if let isRecordingFPS = config?.isRecordingFPS, isRecordingFPS {
             frameRateRecorder?.startTracking()
         }
@@ -463,8 +532,12 @@ public class Cognitive3DAnalyticsCore {
         }
     }
 
-    func stopSenorRecorders() {
+    /// Stop the various recorders that may be active.
+    func stopSensorRecorders() {
         logger?.verbose("stop internal sensor recorders")
+
+        // Stop the sensor recorder timer
+        sensorRecorder?.stopSessionTimer()
 
         if let isRecordingFPS = config?.isRecordingFPS, isRecordingFPS {
             frameRateRecorder?.stop()
@@ -810,7 +883,7 @@ public class Cognitive3DAnalyticsCore {
 
     private func setupConnectivitySupport() async {
         // Initialize and start the sync service
-        await AnalyticsSyncService.shared.startNetworkMonitoring()
+        await AnalyticsSyncService.shared.startNetworkMonitoring(core: self)
     }
 }
 
@@ -853,15 +926,9 @@ extension Cognitive3DAnalyticsCore {
             return false
         }
 
-        // Create the properly prefixed name
-        let finalName =
-            name.starts(with: "c3d") || name.starts(with: "c3d.")
-            ? name
-            : "c3d.\(name)"
-
         let finalPosition = position ?? defaultPos
         return eventRecorder.recordEvent(
-            name: finalName,
+            name: name,
             position: finalPosition,
             properties: properties,
             immediate: immediate

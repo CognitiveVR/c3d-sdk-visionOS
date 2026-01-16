@@ -31,7 +31,7 @@ extension Cognitive3DAnalyticsCore {
         )
     }
 
-    internal func cleanupIdleDetection() {
+    internal func cleanUpIdleDetection() {
         NotificationCenter.default.removeObserver(
             self,
             name: .idleStateChanged,

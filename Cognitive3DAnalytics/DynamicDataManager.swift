@@ -73,7 +73,7 @@ public actor DynamicDataManager {
 
     // Constants for batching network requests
     private let snapshotThreshold = 128
-    private let sendInterval: TimeInterval = 10.0
+    private let sendInterval: TimeInterval = 2.0
     private var nextSendTimestamp: Double = 0
 
     /// Controls whether manifest data should be sent when changes are detected
@@ -105,18 +105,61 @@ public actor DynamicDataManager {
         self.settings = newSettings
     }
 
-    // MARK: - Dynamic Object Registration
+    // MARK: - Dynamic Object Registration with Initial State
     /// When a session is started, each dynamic object in a scene gets registered to enable snapshot recording.
+    /// This version ensures the initial enabled state is properly recorded.
     public func registerDynamicObject(
         id: String,
         name: String,
         mesh: String,
-        fileType: String = "GLTF"
+        fileType: String = gltfFileType
     ) async {
         let sceneMesh = ManifestEntry(
             name: name,
             mesh: mesh,
             fileType: fileType
+        )
+
+        activeManifests[id] = sceneMesh
+        pendingManifestUpdates.insert(id)
+
+        // If we have an active session, immediately send the initial enabled state
+        if let core = self.core, core.isSessionActive {
+            // Create a placeholder state for this object if it doesn't exist
+            let state: DynamicObjectState
+            if let existingState = lastStates[id] {
+                state = existingState
+            } else {
+                state = DynamicObjectState()
+                lastStates[id] = state
+            }
+
+            // Force send the initial enabled:true property
+            let initialProperties = [["enabled": AnyCodable(true)]]
+            await recordDynamicObject(
+                id: id,
+                position: state.lastPosition,
+                rotation: state.lastRotation,
+                scale: state.lastScale,
+                positionThreshold: 0,
+                rotationThreshold: 0,
+                scaleThreshold: 0,
+                updateRate: 0,
+                properties: initialProperties
+            )
+        }
+    }
+
+    public func registerHand(id: String, isRightHand: Bool = true) {
+        let properties: [String: AnyCodable] =
+            isRightHand ? ["controller": AnyCodable("right")] : ["controller": AnyCodable("left")]
+
+        let sceneMesh = ManifestEntry(
+            name: isRightHand ? "RightHand" : "LeftHand",
+            mesh: isRightHand ? "handRight" : "handLeft",
+            fileType: gltfFileType,
+            controllerType: isRightHand ? "hand_right" : "hand_left",
+            properties: [properties]
         )
 
         activeManifests[id] = sceneMesh
@@ -183,12 +226,20 @@ public actor DynamicDataManager {
         let currentTime = Date().timeIntervalSince1970
         let state = lastStates[id] ?? DynamicObjectState()
 
-        guard currentTime >= state.lastUpdateTime + Double(updateRate) else {
-            return
-        }
-
         var hasChangesToRecord = false
         var hasScaleChanged = false
+
+        // Force record if properties are provided
+        if properties != nil {
+            hasChangesToRecord = true
+        }
+
+        // Only check updateRate if we don't have properties to record
+        if !hasChangesToRecord {
+            guard currentTime >= state.lastUpdateTime + Double(updateRate) else {
+                return
+            }
+        }
 
         // Check position threshold
         let positionDelta = distance(position, state.lastPosition)
@@ -208,11 +259,6 @@ public actor DynamicDataManager {
         if scaleDelta > scaleThreshold {
             hasChangesToRecord = true
             hasScaleChanged = true
-        }
-
-        // Force record if properties are provided
-        if properties != nil {
-            hasChangesToRecord = true
         }
 
         guard hasChangesToRecord else { return }
@@ -301,13 +347,32 @@ public actor DynamicDataManager {
         // Prepare the batch with changed manifests
         let batch = createBatch(core: core, manifest: manifest, events: events)
 
+        #if DEBUG
+            logger.info("Batch dynamic objects \(manifest.count) in manifest")
+        #else
+            logger.verbose("Batch dynamic objects \(manifest.count) in manifest")
+        #endif
+
+        #if DEBUG
+            logger.info("Batch dynamic  events \(events.count)")
+        #else
+            logger.verbose("Batch dynamic events \(events.count)")
+        #endif
+
         do {
             let response = try await sendBatchRequest(
-                batch: batch, sceneid: currentSceneId, version: currentSceneVersion)
+                batch: batch,
+                sceneid: currentSceneId,
+                version: currentSceneVersion
+            )
 
             if response.received {
                 jsonPart += 1
-                logger.verbose("Dynamic batch with \(manifest.count) manifest entries sent successfully")
+                #if DEBUG
+                    logger.info("Dynamic batch with \(manifest.count) manifest entries sent successfully")
+                #else
+                    logger.verbose("Dynamic batch with \(manifest.count) manifest entries sent successfully")
+                #endif
             } else {
                 await handleSendFailure(events: events, pendingManifestIds: pendingIds)
             }
@@ -320,27 +385,42 @@ public actor DynamicDataManager {
         // Create batch with empty manifest
         let batch = createBatch(core: core, manifest: [:], events: events)
 
+        #if DEBUG
+            logger.info("Batch dynamic events \(events.count)")
+        #else
+            logger.verbose("Batch dynamic events \(events.count)")
+        #endif
+
         do {
             let response = try await sendBatchRequest(
-                batch: batch, sceneid: currentSceneId, version: currentSceneVersion)
+                batch: batch,
+                sceneid: currentSceneId,
+                version: currentSceneVersion
+            )
 
             if response.received {
                 jsonPart += 1
-                logger.verbose("Dynamic batch sent successfully")
+                #if DEBUG
+                    logger.info("Batch success")
+                #else
+                    logger.verbose("Batch success")
+                #endif
             } else {
-                Task() {
+                Task {
                     await handleSendFailure(events: events)
                 }
             }
         } catch {
-            Task () {
+            Task {
                 await handleSendFailure(events: events, error: error)
             }
         }
     }
 
     private func createBatch(
-        core: Cognitive3DAnalyticsCore, manifest: [String: ManifestEntry], events: [DynamicEventData]
+        core: Cognitive3DAnalyticsCore,
+        manifest: [String: ManifestEntry],
+        events: [DynamicEventData]
     ) -> DynamicSession {
         return DynamicSession(
             userId: core.getUserId(),
@@ -365,7 +445,9 @@ public actor DynamicDataManager {
 
     /// Handle network errors; if the error is not an API error but a network error (500) etc. store the data in the local data cache.
     private func handleSendFailure(
-        events: [DynamicEventData], pendingManifestIds: Set<String>? = nil, error: Error? = nil
+        events: [DynamicEventData],
+        pendingManifestIds: Set<String>? = nil,
+        error: Error? = nil
     ) async {
         // Check if it's a network error that should be cached
         if let error = error, let core = self.core, core.isNetworkError(error) {
@@ -374,11 +456,12 @@ public actor DynamicDataManager {
             // Cache the data using DataCacheSystem
             do {
                 // Create the batch to cache
-                let manifestToCache = pendingManifestIds?.reduce(into: [String: ManifestEntry]()) { result, id in
-                    if let entry = activeManifests[id] {
-                        result[id] = entry
-                    }
-                } ?? [:]
+                let manifestToCache =
+                    pendingManifestIds?.reduce(into: [String: ManifestEntry]()) { result, id in
+                        if let entry = activeManifests[id] {
+                            result[id] = entry
+                        }
+                    } ?? [:]
 
                 let batchToCache = createBatch(core: core, manifest: manifestToCache, events: events)
 
@@ -388,8 +471,12 @@ public actor DynamicDataManager {
                 // Use the DataCacheSystem to cache the request
                 if let dataCache = core.dataCacheSystem {
                     let sceneId = core.getCurrentSceneId()
-                    let version = core.getCurrentSceneVersionId()
-                    guard let url = NetworkEnvironment.current.constructDynamicObjectsURL(sceneId: sceneId, version: version)
+                    let version = core.getCurrentSceneVersionNumber()
+                    guard
+                        let url = NetworkEnvironment.current.constructDynamicObjectsURL(
+                            sceneId: sceneId,
+                            version: version
+                        )
                     else {
                         logger.error("Failed to create URL for gaze data")
                         return
@@ -464,9 +551,38 @@ public actor DynamicDataManager {
     // MARK: - Session Management
     internal func endSession() async {
         await sendData()
+        await clearEngagements()
+        cleanupStaleEntries()
         queuedEvents.removeAll()
         pendingManifestUpdates.removeAll()
         jsonPart = 1
+    }
+
+    // MARK: - State Cleanup
+
+    /// Removes stale entries from lastStates that are no longer in activeManifests.
+    /// This prevents memory growth from accumulated state entries of removed objects.
+    private func cleanupStaleEntries() {
+        let activeIds = Set(activeManifests.keys)
+        let staleIds = Set(lastStates.keys).subtracting(activeIds)
+
+        if !staleIds.isEmpty {
+            for id in staleIds {
+                lastStates.removeValue(forKey: id)
+            }
+            logger.verbose("Cleaned up \(staleIds.count) stale state entries")
+        }
+    }
+
+    /// Performs periodic cleanup of stale entries. Call this during session pauses
+    /// or at regular intervals to prevent memory growth.
+    public func performMaintenanceCleanup() {
+        cleanupStaleEntries()
+
+        // Also clean up gaze sync tracking for objects that are no longer active
+        let activeIds = Set(activeManifests.keys)
+        syncedObjects = syncedObjects.intersection(activeIds)
+        gazeSyncUpdates = gazeSyncUpdates.filter { activeIds.contains($0.key) }
     }
 
     // MARK: - gaze sync'ing
@@ -487,7 +603,11 @@ public actor DynamicDataManager {
     ///   - engagementName: The name of the engagement
     public func beginEngagement(objectId: String, engagementName: String) async {
         await beginEngagement(
-            objectId: objectId, engagementName: engagementName, uniqueEngagementId: "", properties: nil)
+            objectId: objectId,
+            engagementName: engagementName,
+            uniqueEngagementId: "",
+            properties: nil
+        )
     }
 
     /// Begins an engagement with a dynamic object with a unique identifier
@@ -497,7 +617,11 @@ public actor DynamicDataManager {
     ///   - uniqueEngagementId: A unique identifier for this engagement
     public func beginEngagement(objectId: String, engagementName: String, uniqueEngagementId: String) async {
         await beginEngagement(
-            objectId: objectId, engagementName: engagementName, uniqueEngagementId: uniqueEngagementId, properties: nil)
+            objectId: objectId,
+            engagementName: engagementName,
+            uniqueEngagementId: uniqueEngagementId,
+            properties: nil
+        )
     }
 
     /// Begins an engagement with a dynamic object with properties
@@ -537,7 +661,7 @@ public actor DynamicDataManager {
             }
 
             // Send the existing event
-            _ = await existingEvent.send(position)
+            existingEvent.send(position)
 
             // Replace with the new event
             engagements[finalUniqueId] = customEvent
@@ -562,7 +686,11 @@ public actor DynamicDataManager {
     ///   - uniqueEngagementId: The unique identifier for this engagement
     public func endEngagement(objectId: String, engagementName: String, uniqueEngagementId: String) async {
         await endEngagement(
-            objectId: objectId, engagementName: engagementName, uniqueEngagementId: uniqueEngagementId, properties: nil)
+            objectId: objectId,
+            engagementName: engagementName,
+            uniqueEngagementId: uniqueEngagementId,
+            properties: nil
+        )
     }
 
     /// Ends an engagement with a dynamic object
@@ -602,7 +730,7 @@ public actor DynamicDataManager {
             }
 
             // Send the event
-            _ = await existingEvent.send(position)
+            existingEvent.send(position)
 
             // Remove from dictionary
             engagements.removeValue(forKey: finalUniqueId)
@@ -611,14 +739,14 @@ public actor DynamicDataManager {
             let event = CustomEvent(name: engagementName, properties: properties ?? [:], core: core)
                 .setDynamicObject(objectId)
 
-            _ = await event.send(position)
+            event.send(position)
         }
     }
 
     // Add to endSession method
     internal func clearEngagements() async {
         for (_, event) in engagements {
-            _ = await event.send()
+            event.send()
         }
         engagements.removeAll()
     }

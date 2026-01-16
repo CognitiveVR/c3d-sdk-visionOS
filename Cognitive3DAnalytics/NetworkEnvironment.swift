@@ -7,10 +7,9 @@ internal enum NetworkEnvironment {
     case dev
 
     /// Current environment determined by build configuration
-    // TODO: refactor, we probably don't want to have a key for API_ENVIRONMENT as this should not be exposed to users of the framework, discuss. End users will always be using production?
     static var current: NetworkEnvironment {
         guard let environmentString = Bundle.main.object(forInfoDictionaryKey: "API_ENVIRONMENT") as? String else {
-            return .staging
+            return .production
         }
 
         switch environmentString.lowercased() {
@@ -32,7 +31,7 @@ internal enum NetworkEnvironment {
             case .staging:
                 return "https://data.c3ddev.com/v0"
             case .dev:
-                return "https://data.cognitive3d.com/v0"
+                return "https://data.c3ddev.com/v0"
             }
         }
         return urlString

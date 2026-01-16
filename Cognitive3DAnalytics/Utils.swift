@@ -121,67 +121,78 @@ func createDeviceProperties(core: Cognitive3DAnalyticsCore) -> DeviceProperties 
         return Int(totalMemoryBytes / 1_027_376_128)
     }
 
-    #if INCLUDE_HEIGHT_PROPERTY
-        // TODO: determine/estimate the user's height
-        func getHeight() -> Double {
-            return 0
-        }
-    #endif
-
-    #if INCLUDE_HEIGHT_PROPERTY
-        return DeviceProperties(
-            username: core.getUserName(),
-            appName: appName,
-            appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0",
-            appEngineVersion: getOperatingSystemVersion(),
-            deviceType: "Apple Vision Pro",
-            deviceCPU: cpu,
-            deviceModel: visonProHmdType,
-            deviceGPU: "Apple GPU",
-            deviceOS: getOperatingSystemVersion(),
-            deviceMemory: getTotalDeviceMemoryGB(),
-            deviceId: core.getDeviceId(),
-            roomSize: 0.0,
-            roomSizeDescription: "Unknown",
-            appInEditor: isInSimulator,  // Use the pre-computed value
-            // The version of the analytics SDK.
-            version: "\(Cognitive3DAnalyticsCore.version)",
-            hmdType: visonProHmdType,
-            hmdManufacturer: "Apple",
-            eyeTrackingEnabled: true,
-            eyeTrackingType: "ARKit",
-            appSDKType: "visionOS",
-            appEngine: "visionOS",
-            height: getHeight()
-        )
-    #else
-        // In visionOS, the app engine is the same as the operating system.
-        return DeviceProperties(
-            username: core.getParticipantFullName(),
-            appName: appName,
-            appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0",
-            appEngineVersion: getOperatingSystemVersion(),
-            deviceType: "Apple Vision Pro",
-            deviceCPU: cpu,
-            deviceModel: visonProHmdType,
-            deviceGPU: "Apple GPU",
-            deviceOS: getOperatingSystemVersion(),
-            deviceMemory: getTotalDeviceMemoryGB(),
-            deviceId: core.getDeviceId(),
-            roomSize: 0.0,
-            roomSizeDescription: "Unknown",
-            appInEditor: isInSimulator,  // Use the pre-computed value
-            // The version of the analytics SDK.
-            version: "\(Cognitive3DAnalyticsCore.version)",
-            hmdType: visonProHmdType,
-            hmdManufacturer: "Apple",
-            eyeTrackingEnabled: true,
-            eyeTrackingType: "ARKit",
-            appSDKType: "visionOS",
-            appEngine: "visionOS"
-        )
-    #endif
+    // In visionOS, the app engine is the same as the operating system.
+    return DeviceProperties(
+        username: core.getParticipantFullName(),
+        appName: appName,
+        appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0",
+        appEngineVersion: getOperatingSystemVersion(),
+        deviceType: "Apple Vision Pro",
+        deviceCPU: cpu,
+        deviceModel: visonProHmdType,
+        deviceGPU: "Apple GPU",
+        deviceOS: getOperatingSystemVersion(),
+        deviceMemory: getTotalDeviceMemoryGB(),
+        deviceId: core.getDeviceId(),
+        roomSize: 0.0,
+        roomSizeDescription: "Unknown",
+        appInEditor: isInSimulator,  // Use the pre-computed value
+        // The version of the analytics SDK.
+        version: "\(Cognitive3DAnalyticsCore.version)",
+        hmdType: visonProHmdType,
+        hmdManufacturer: "Apple",
+        eyeTrackingEnabled: true,
+        eyeTrackingType: "ARKit",
+        appSDKType: "visionOS",
+        appEngine: "visionOS"
+    )
 }
+
+/**
+ Finds all the entities with a specific component in the hierarchy.
+
+ - Parameters:
+   - entity: The root entity to start searching from.
+   - componentType: The type of component to search for.
+ - Returns: An array of tuples containing entities and their corresponding components.
+ */
+public func findEntitiesWithComponent<T: Component>(_ entity: Entity, componentType: T.Type) -> [(entity: Entity, component: T)] {
+    var foundEntities: [(entity: Entity, component: T)] = []
+    func searchEntities(_ currentEntity: Entity) {
+        // Check if the entity has the specified component
+        if let component = currentEntity.components[componentType] {
+            foundEntities.append((entity: currentEntity, component: component))
+        }
+
+        // Recursively search children
+        for child in currentEntity.children {
+            searchEntities(child,)
+        }
+    }
+
+    // Start the search
+    searchEntities(entity)
+
+    return foundEntities
+}
+
+
+// MARK: extensions
+extension Entity {
+    /// Recursively finds the first descendant (including self) with a ModelComponent.
+    public func firstModelEntity() -> Entity? {
+        if self.components[ModelComponent.self] != nil {
+            return self
+        }
+        for child in self.children {
+            if let found = child.firstModelEntity() {
+                return found
+            }
+        }
+        return nil
+    }
+}
+
 
 extension Data {
     /// Attempts to format JSON data into a pretty-printed string representation
@@ -223,46 +234,6 @@ extension Data {
     }
 }
 
-/// Custom errors for JSON formatting operations
-enum JSONError: Error {
-    case invalidJSON
-    case stringConversionFailed
-
-    var localizedDescription: String {
-        switch self {
-        case .invalidJSON:
-            return "Failed to parse data as valid JSON"
-        case .stringConversionFailed:
-            return "Failed to convert formatted JSON data to string"
-        }
-    }
-}
-
-// Helper extension for working with dictionaries
-extension Dictionary where Key == String, Value == Any {
-    // Add or update a property in the dictionary
-    mutating func addProperty(key: String, value: Any) {
-        self[key] = value
-    }
-
-    // Create new dictionary with added property
-    func withProperty(key: String, value: Any) -> [String: Any] {
-        var newDict = self
-        newDict[key] = value
-        return newDict
-    }
-}
-
-// MARK: - print format
-
-func formatVector3D(_ position: SIMD3<Float>, useTwoDecimals: Bool = true) -> String {
-    if useTwoDecimals {
-        return String(format: "[%.2f, %.2f, %.2f]", position.x, position.y, position.z)
-    } else {
-        return String(format: "[%.3f, %.3f, %.3f]", position.x, position.y, position.z)
-    }
-}
-
 // MARK: - String Formatting Extensions
 
 extension AffineTransform3D {
@@ -282,3 +253,51 @@ extension AffineTransform3D {
         return description
     }
 }
+
+// Helper extension for working with dictionaries
+extension Dictionary where Key == String, Value == Any {
+    // Add or update a property in the dictionary
+    mutating func addProperty(key: String, value: Any) {
+        self[key] = value
+    }
+
+    // Create new dictionary with added property
+    func withProperty(key: String, value: Any) -> [String: Any] {
+        var newDict = self
+        newDict[key] = value
+        return newDict
+    }
+}
+
+// MARK: -
+
+/// Custom errors for JSON formatting operations
+enum JSONError: Error {
+    case invalidJSON
+    case stringConversionFailed
+
+    var localizedDescription: String {
+        switch self {
+        case .invalidJSON:
+            return "Failed to parse data as valid JSON"
+        case .stringConversionFailed:
+            return "Failed to convert formatted JSON data to string"
+        }
+    }
+}
+
+
+
+// MARK: - print format
+
+func formatVector3D(_ position: SIMD3<Float>, useTwoDecimals: Bool = true) -> String {
+    if useTwoDecimals {
+        return String(format: "[%.2f, %.2f, %.2f]", position.x, position.y, position.z)
+    } else {
+        return String(format: "[%.3f, %.3f, %.3f]", position.x, position.y, position.z)
+    }
+}
+
+
+
+
