@@ -259,6 +259,7 @@ public class Cognitive3DAnalyticsCore {
         config?.fixationBatchSize = settings.fixationBatchSize
         config?.isHandTrackingRequired = settings.isHandTrackingRequired
         config?.sensorAutoSendInterval = settings.sensorAutoSendInterval
+        config?.dynamicObjectProcessInterval = settings.dynamicObjectProcessInterval
     }
 
     private func setupDeviceIdentifier() {
