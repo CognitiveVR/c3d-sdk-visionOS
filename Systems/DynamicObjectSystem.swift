@@ -135,18 +135,8 @@ public final class DynamicObjectSystem: System, @unchecked Sendable {
     private var currentTime: Double = 0.0
     private var lastProcessTime: Double = 0.0
     private var minimumProcessInterval: Double {
-        guard let config = Cognitive3DAnalyticsCore.shared.config else {
-            return 1.0 / 30.0
-        }
-
-        // Runtime lookup keeps this file source-compatible with older Config definitions.
-        if
-            let configuredInterval = Mirror(reflecting: config).children.first(where: { $0.label == "dynamicObjectProcessInterval" })?.value as? Double,
-            configuredInterval > 0
-        {
-            return configuredInterval
-        }
-        return 1.0 / 30.0
+        let interval = Cognitive3DAnalyticsCore.shared.config?.dynamicObjectProcessInterval ?? 1.0 / 30.0
+        return interval > 0 ? interval : 1.0 / 30.0
     }
 
     private var isProcessing = false
@@ -175,16 +165,16 @@ public final class DynamicObjectSystem: System, @unchecked Sendable {
                 Task { [weak self] in
                     switch event {
                     case .ended:
-                        self?.isSessionEnding = true
                         await self?.timingManager.removeAllEntities()
                         self?.stateQueue.async {
+                            self?.isSessionEnding = true
                             self?.currentTime = 0.0
                             self?.lastProcessTime = 0.0
                             self?.isProcessing = false
                         }
                     case .started:
-                        self?.isSessionEnding = false
                         self?.stateQueue.async {
+                            self?.isSessionEnding = false
                             self?.currentTime = 0.0
                             self?.lastProcessTime = 0.0
                             self?.isProcessing = false
@@ -235,7 +225,8 @@ public final class DynamicObjectSystem: System, @unchecked Sendable {
     /// And also handle if the enabled state for a dynamic object has changed.
     /// Respects per-object updateRate timing to avoid unnecessary processing.
     private func processEntities(entities: [Entity], frameTime: Double) async {
-        guard !isSessionEnding else { return }
+        let sessionEnding = stateQueue.sync { isSessionEnding }
+        guard !sessionEnding else { return }
 
         for entity in entities {
             // Capture component and entity state in one MainActor hop.

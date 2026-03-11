@@ -89,4 +89,7 @@ public class Config {
 
     /// Sensor auto-send timer interval in seconds (configurable at runtime)
     var sensorAutoSendInterval: Double = 10.0
+
+    /// Minimum interval between dynamic object processing cycles in seconds (default: 1/30th second)
+    var dynamicObjectProcessInterval: Double = 1.0 / 30.0
 }
