@@ -59,6 +59,9 @@ public class CoreSettings {
     /// Sensor auto-send timer interval in seconds
     public var sensorAutoSendInterval: Double = 10.0 //Set to 10 in here and config.swift
 
+    /// Minimum interval between dynamic object processing cycles in seconds (default: 1/30th second)
+    public var dynamicObjectProcessInterval: Double = 1.0 / 30.0
+
     public init(
         defaultSceneName: String = "",
         allSceneData: [SceneData] = [],
@@ -74,7 +77,8 @@ public class CoreSettings {
         dynamicObjectFileType: String = gltfFileType,
         fixationBatchSize: Int = 32,
         isOfflineSupportEnabled: Bool = true,
-        sensorAutoSendInterval: Double = 10.0 //change here aswell 
+        sensorAutoSendInterval: Double = 10.0, //change here aswell
+        dynamicObjectProcessInterval: Double = 1.0 / 30.0
     ) {
         self.defaultSceneName = defaultSceneName
         self.allSceneData = allSceneData
@@ -91,5 +95,6 @@ public class CoreSettings {
         self.fixationBatchSize = fixationBatchSize
         self.isOfflineSupportEnabled = isOfflineSupportEnabled
         self.sensorAutoSendInterval = sensorAutoSendInterval
+        self.dynamicObjectProcessInterval = dynamicObjectProcessInterval
     }
 }

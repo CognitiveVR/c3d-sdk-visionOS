@@ -118,7 +118,7 @@ private actor TimingInfoManager {
 }
 
 /// This class works with the Dynamic object manager in the C3D SDK to record dynamic object data for the active analytics session.
-public final class DynamicObjectSystem: System {
+public final class DynamicObjectSystem: System, @unchecked Sendable {
     // Query to find all entities with DynamicComponent
     private static let query = EntityQuery(where: .has(DynamicComponent.self))
 
@@ -133,6 +133,14 @@ public final class DynamicObjectSystem: System {
 
     // Accumulated time tracker for delta-time based timing
     private var currentTime: Double = 0.0
+    private var lastProcessTime: Double = 0.0
+    private var minimumProcessInterval: Double {
+        let interval = Cognitive3DAnalyticsCore.shared.config?.dynamicObjectProcessInterval ?? 1.0 / 30.0
+        return interval > 0 ? interval : 1.0 / 30.0
+    }
+
+    private var isProcessing = false
+    private let stateQueue = DispatchQueue(label: "com.cognitive3d.dynamicobjectsystem.state")
 
     // The dynamic object manager in the C3D SDK.
     private var dynamicManager: DynamicDataManager?
@@ -157,12 +165,20 @@ public final class DynamicObjectSystem: System {
                 Task { [weak self] in
                     switch event {
                     case .ended:
-                        self?.isSessionEnding = true
                         await self?.timingManager.removeAllEntities()
-                        self?.currentTime = 0.0
+                        self?.stateQueue.async {
+                            self?.isSessionEnding = true
+                            self?.currentTime = 0.0
+                            self?.lastProcessTime = 0.0
+                            self?.isProcessing = false
+                        }
                     case .started:
-                        self?.isSessionEnding = false
-                        self?.currentTime = 0.0
+                        self?.stateQueue.async {
+                            self?.isSessionEnding = false
+                            self?.currentTime = 0.0
+                            self?.lastProcessTime = 0.0
+                            self?.isProcessing = false
+                        }
                     }
                 }
             }
@@ -171,42 +187,70 @@ public final class DynamicObjectSystem: System {
 
     // Using a system, record the transforms of dynamic objects. The data gets posted to the C3D servers.
     public func update(context: SceneUpdateContext) {
-        // Accumulate time using deltaTime from SceneUpdateContext
-        currentTime += context.deltaTime
+        let frameTime: Double? = stateQueue.sync {
+            // Accumulate time using deltaTime from SceneUpdateContext
+            currentTime += context.deltaTime
 
-        Task {
-            await processEntities(context: context)
+            guard currentTime - lastProcessTime >= minimumProcessInterval else {
+                return nil
+            }
+
+            guard !isProcessing else {
+                return nil
+            }
+
+            lastProcessTime = currentTime
+            isProcessing = true
+            return currentTime
+        }
+
+        guard let frameTime else {
+            return
+        }
+
+        let entities = Array(context.entities(matching: Self.query, updatingSystemWhen: .rendering))
+
+        Task { [weak self] in
+            guard let self else { return }
+            defer {
+                self.stateQueue.async {
+                    self.isProcessing = false
+                }
+            }
+            await processEntities(entities: entities, frameTime: frameTime)
         }
     }
 
     /// Get the position, scale & rotation for a entity to create a dynamic record to eventually post the C3D back end.
     /// And also handle if the enabled state for a dynamic object has changed.
     /// Respects per-object updateRate timing to avoid unnecessary processing.
-    private func processEntities(context: SceneUpdateContext) async {
-        guard !isSessionEnding else { return }
+    private func processEntities(entities: [Entity], frameTime: Double) async {
+        let sessionEnding = stateQueue.sync { isSessionEnding }
+        guard !sessionEnding else { return }
 
-        for entity in context.entities(matching: Self.query, updatingSystemWhen: .rendering) {
-            // Safely extract component information
-            guard let dynamicComponent = await extractDynamicComponent(from: entity) else {
+        for entity in entities {
+            // Capture component and entity state in one MainActor hop.
+            guard let entityState = await captureEntityState(entity) else {
                 continue
             }
+            let dynamicComponent = entityState.dynamicComponent
 
             // Capture current entity state
-            let isParentNil = await isEntityParentNil(entity)
-            let isEntityActive = await checkEntityActive(entity)
+            let isParentNil = entityState.isParentNil
+            let isEntityActive = entityState.isEntityActive
             let isEnabled = !isParentNil && isEntityActive
             let id = dynamicComponent.dynamicId
 
             // Handle based on enabled state
             if !isEnabled {
-                await handleDisabledEntity(entity, id: id)
+                await handleDisabledEntity(entity, dynamicComponent: dynamicComponent, id: id, isParentNil: isParentNil)
                 continue
             }
 
             // Check if this entity should be updated based on its individual updateRate
             // or if it's synced with gaze tracking
             // IMPORTANT: Always allow first update to ensure enabled:true is sent
-            let (shouldUpdate, isFirstUpdate) = await shouldUpdateEntityNow(dynamicComponent, currentTime: currentTime)
+            let (shouldUpdate, isFirstUpdate) = await shouldUpdateEntityNow(dynamicComponent, currentTime: frameTime)
             let needsEnabledProperty = await MainActor.run {
                 !(hasEnabledStates[id] ?? false)
             }
@@ -258,15 +302,11 @@ public final class DynamicObjectSystem: System {
     }
 
     /// Handle entity that is currently disabled
-    private func handleDisabledEntity(_ entity: Entity, id: String) async {
-        let entityExists = await MainActor.run { entity.parent != nil }
+    private func handleDisabledEntity(_ entity: Entity, dynamicComponent: DynamicComponent, id: String, isParentNil: Bool) async {
+        let entityExists = !isParentNil
 
         if entityExists {
             // Entity is disabled but still in scene - just send enabled:false
-            guard let dynamicComponent = await extractDynamicComponent(from: entity) else {
-                return
-            }
-
             let properties: [[String: AnyCodable]]? = [["enabled": AnyCodable(false)]]
             await updateEntityTransform(entity, dynamicComponent: dynamicComponent, properties: properties)
         } else {
@@ -294,13 +334,11 @@ public final class DynamicObjectSystem: System {
             // Check if this is the first time we're sending enabled:true for this object
             // This mirrors Unity's !ActiveDynamicObjectsArray[i].hasEnabled check
             let hasAlreadySentEnabled = hasEnabledStates[id] ?? false
-
             if !hasAlreadySentEnabled {
                 // Mark that we've now sent enabled:true for this object
                 hasEnabledStates[id] = true
                 return true
             }
-
             return false
         }
 
@@ -331,19 +369,17 @@ public final class DynamicObjectSystem: System {
             return
         }
 
-        // Get position and orientation in world space
-        let position = await getWorldPosition(entity)
-        let rotation = await getWorldRotation(entity)
-        let scale = await getWorldScale(entity)
+        // Get world transform in one MainActor hop.
+        let transform = await getWorldTransform(entity)
 
         // Use the existing recordDynamicObject method with component-specific thresholds
         // The timing control is now handled at the system level, so DynamicDataManager
         // focuses purely on threshold-based recording decisions
         await dynamicManager.recordDynamicObject(
             id: dynamicComponent.dynamicId,
-            position: position,
-            rotation: rotation,
-            scale: scale,
+            position: transform.position,
+            rotation: transform.rotation,
+            scale: transform.scale,
             positionThreshold: dynamicComponent.positionThreshold,
             rotationThreshold: dynamicComponent.rotationThreshold,
             scaleThreshold: dynamicComponent.scaleThreshold,
@@ -353,106 +389,22 @@ public final class DynamicObjectSystem: System {
     }
 
     // Helper methods to safely access entity properties across actor boundaries
-    private func extractDynamicComponent(from entity: Entity) async -> DynamicComponent? {
+    private func captureEntityState(_ entity: Entity) async -> (dynamicComponent: DynamicComponent, isParentNil: Bool, isEntityActive: Bool)? {
         return await MainActor.run {
-            entity.components[DynamicComponent.self]
+            guard let dynamicComponent = entity.components[DynamicComponent.self] else {
+                return nil
+            }
+            return (dynamicComponent, entity.parent == nil, entity.isActive)
         }
     }
 
-    // MARK: - entity handling
-    private func isEntityParentNil(_ entity: Entity) async -> Bool {
+    private func getWorldTransform(_ entity: Entity) async -> (position: SIMD3<Float>, rotation: simd_quatf, scale: SIMD3<Float>) {
         return await MainActor.run {
-            entity.parent == nil
-        }
-    }
-
-    private func checkEntityActive(_ entity: Entity) async -> Bool {
-        return await MainActor.run {
-            entity.isActive
-        }
-    }
-
-    // MARK: - transform handling methods
-
-    private func getWorldPosition(_ entity: Entity) async -> SIMD3<Float> {
-        return await MainActor.run {
-            var currentEntity = entity
-            var worldPosition = SIMD3<Float>(0, 0, 0)
-            var worldRotation = simd_quatf(ix: 0, iy: 0, iz: 0, r: 1)  // Identity
-            var worldScale = SIMD3<Float>(1, 1, 1)
-
-            // Build transform chain from entity to root
-            var transformChain: [(position: SIMD3<Float>, rotation: simd_quatf, scale: SIMD3<Float>)] = []
-
-            while true {
-                transformChain.append(
-                    (
-                        position: currentEntity.position,
-                        rotation: currentEntity.orientation,
-                        scale: currentEntity.scale
-                    )
-                )
-
-                guard let parent = currentEntity.parent else { break }
-                currentEntity = parent
-            }
-
-            // Apply transforms from root to entity
-            for transform in transformChain.reversed() {
-                let rotatedPosition = worldRotation.act(transform.position)
-                let scaledPosition = rotatedPosition * worldScale
-                worldPosition += scaledPosition
-                worldRotation = worldRotation * transform.rotation
-                worldScale = worldScale * transform.scale
-            }
-
-            return worldPosition
-        }
-    }
-
-    private func getWorldRotation(_ entity: Entity) async -> simd_quatf {
-        return await MainActor.run {
-            var currentEntity = entity
-            var worldRotation = simd_quatf(ix: 0, iy: 0, iz: 0, r: 1)  // Identity
-
-            // Build rotation chain from entity to root
-            var rotationChain: [simd_quatf] = []
-
-            while true {
-                rotationChain.append(currentEntity.orientation)
-                guard let parent = currentEntity.parent else { break }
-                currentEntity = parent
-            }
-
-            // Apply rotations from root to entity
-            for rotation in rotationChain.reversed() {
-                worldRotation = worldRotation * rotation
-            }
-
-            return worldRotation
-        }
-    }
-
-    private func getWorldScale(_ entity: Entity) async -> SIMD3<Float> {
-        return await MainActor.run {
-            var currentEntity = entity
-            var worldScale = SIMD3<Float>(1, 1, 1)
-
-            // Build scale chain from entity to root
-            var scaleChain: [SIMD3<Float>] = []
-
-            while true {
-                scaleChain.append(currentEntity.scale)
-                guard let parent = currentEntity.parent else { break }
-                currentEntity = parent
-            }
-
-            // Apply scales from root to entity
-            for scale in scaleChain.reversed() {
-                worldScale = worldScale * scale
-            }
-
-            return worldScale
+            (
+                position: entity.position(relativeTo: nil),
+                rotation: entity.orientation(relativeTo: nil),
+                scale: entity.scale(relativeTo: nil)
+            )
         }
     }
 }
