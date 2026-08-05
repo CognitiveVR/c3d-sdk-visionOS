@@ -65,29 +65,13 @@ func readSysctlString(_ name: String) -> String {
 
 /// The raw `hw.model` hardware identifier, for example `N301AP` on Apple Vision Pro.
 ///
-/// The board configuration. Reported together with `getRawHardwareMachineIdentifier()`; between them
-/// the two identify the specific hardware variant, which no other reported signal does.
+/// This is the primary hardware-model signal for the pipeline: it identifies the specific hardware
+/// variant, which no other reported signal does.
 ///
 /// - Important: in a simulator build this reports the **host Mac's** hardware identifier, not a
 ///   headset. Consumers must read the simulator flag alongside it.
 func getRawHardwareModel() -> String {
     return readSysctlString("hw.model")
-}
-
-/// The raw `hw.machine` device identifier, for example `RealityDevice14,1` on a first-generation
-/// Apple Vision Pro.
-///
-/// A different `sysctl` from `hw.model`, and reported alongside it rather than instead of it. The two
-/// answer different questions: `hw.model` is the board configuration (`N301AP`), while `hw.machine`
-/// is the device identifier Apple documents and publishes for each hardware generation. Board
-/// configurations for newly released hardware are frequently not public, so `hw.machine` is often
-/// the only signal that can distinguish one generation from another — which is exactly what the
-/// pipeline needs in order to tell hardware revisions apart.
-///
-/// - Important: in a simulator build this reports the **host Mac's** device identifier, not a
-///   headset. Consumers must read the simulator flag alongside it.
-func getRawHardwareMachineIdentifier() -> String {
-    return readSysctlString("hw.machine")
 }
 
 /// The raw `machdep.cpu.brand_string` CPU identifier.
@@ -132,7 +116,6 @@ let bytesPerGigabyte: UInt64 = 1_073_741_824
 /// process is alive, so the `sysctl` lookups and the Metal device creation are done once.
 enum CachedRawDeviceSignals {
     static let hardwareModel = getRawHardwareModel()
-    static let hardwareMachineIdentifier = getRawHardwareMachineIdentifier()
     static let cpuBrandString = getRawCPUBrandString()
     static let gpuName = getRawGPUName()
 }
@@ -164,10 +147,9 @@ func createDeviceProperties(core: Cognitive3DAnalyticsCore) -> DeviceProperties 
         return "visionOS \(osVersion.majorVersion).\(osVersion.minorVersion).\(osVersion.patchVersion)"
     }
 
-    // The device / model / HMD-type fields all carry the raw board configuration unchanged, rather
-    // than three different hardcoded product names. The machine identifier is reported separately in
-    // its own field; it is deliberately not substituted into these three, because changing what an
-    // existing field carries would silently reinterpret sessions already captured under it.
+    // The raw hardware identifier is the single hardware-identity signal this platform exposes, so
+    // the device / model / HMD-type fields all carry it unchanged rather than three different
+    // hardcoded product names.
     let hardwareModel = CachedRawDeviceSignals.hardwareModel
 
     // In visionOS, the app engine is the same as the operating system.
@@ -180,7 +162,6 @@ func createDeviceProperties(core: Cognitive3DAnalyticsCore) -> DeviceProperties 
         deviceCPU: CachedRawDeviceSignals.cpuBrandString,
         deviceModel: hardwareModel,
         deviceHardwareModel: hardwareModel,
-        deviceHardwareMachine: CachedRawDeviceSignals.hardwareMachineIdentifier,
         deviceGPU: CachedRawDeviceSignals.gpuName,
         deviceOS: getOperatingSystemVersion(),
         deviceMemoryInGigabytes: getTotalDeviceMemoryInGigabytes(),
