@@ -34,6 +34,7 @@
 		780D2B1D2DB6EB9D0064B801 /* NetworkDataCacheDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 780D2B1C2DB6EB9D0064B801 /* NetworkDataCacheDelegate.swift */; };
 		780D2B1E2DB6EB9D0064B801 /* NetworkDataCacheDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 780D2B1C2DB6EB9D0064B801 /* NetworkDataCacheDelegate.swift */; };
 		780D4FF52D78D94F009839E3 /* SessionPropertiesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 780D4FF42D78D94F009839E3 /* SessionPropertiesTests.swift */; };
+		C3D17360000000000000AA02 /* DevicePropertiesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D17360000000000000AA01 /* DevicePropertiesTests.swift */; };
 		78121FDD2CFA407A0092A774 /* FreeformData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78121FDC2CFA407A0092A774 /* FreeformData.swift */; };
 		78121FDE2CFA407A0092A774 /* FreeformData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78121FDC2CFA407A0092A774 /* FreeformData.swift */; };
 		781E76A22D28FCAE00A11F84 /* ExitPollSurveyViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 781E76A12D28FCAE00A11F84 /* ExitPollSurveyViewModel.swift */; };
@@ -187,6 +188,7 @@
 		7809C81C2DD5071C005578E2 /* HandTracking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandTracking.swift; sourceTree = "<group>"; };
 		780D2B1C2DB6EB9D0064B801 /* NetworkDataCacheDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkDataCacheDelegate.swift; sourceTree = "<group>"; };
 		780D4FF42D78D94F009839E3 /* SessionPropertiesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionPropertiesTests.swift; sourceTree = "<group>"; };
+		C3D17360000000000000AA01 /* DevicePropertiesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicePropertiesTests.swift; sourceTree = "<group>"; };
 		78121FDC2CFA407A0092A774 /* FreeformData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreeformData.swift; sourceTree = "<group>"; };
 		781E76A12D28FCAE00A11F84 /* ExitPollSurveyViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExitPollSurveyViewModel.swift; sourceTree = "<group>"; };
 		781E79482DD7FAAF008AE9F1 /* HandComponent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandComponent.swift; sourceTree = "<group>"; };
@@ -333,6 +335,7 @@
 				788EA6C22CF7FF7300A4207A /* MockURLSession.swift */,
 				78B264952DA9CBDA004A9B48 /* MockExtensions.swift */,
 				780D4FF42D78D94F009839E3 /* SessionPropertiesTests.swift */,
+				C3D17360000000000000AA01 /* DevicePropertiesTests.swift */,
 				78C7B08D2D67A2A600290ECA /* MockClasses.swift */,
 				78C7B08E2D67A2A600290ECA /* SensorRecorderTests.swift */,
 				78ECC18D2D012512006B063F /* TestUtilities.swift */,
@@ -663,6 +666,7 @@
 				788843472D696B3A00926E39 /* GazeSyncManager.swift in Sources */,
 				785CB60E2D2B2A8900A76BBA /* MultipleChoiceQuestionView.swift in Sources */,
 				780D4FF52D78D94F009839E3 /* SessionPropertiesTests.swift in Sources */,
+				C3D17360000000000000AA02 /* DevicePropertiesTests.swift in Sources */,
 				5426452E2CF1715C008D49F2 /* GazeRecorder.swift in Sources */,
 				78B264972DA9CBDA004A9B48 /* MockExtensions.swift in Sources */,
 				78E387E22DB81E3900341328 /* ExitPollLocalData.swift in Sources */,

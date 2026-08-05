@@ -12,7 +12,17 @@ import Foundation
 /// The C3D Analytics works primarily with the GLTF file type.
 public let gltfFileType = "gltf"
 
-/// At this time, there is one HMD type running visonOS, the Apple Vision Pro.
+/// A human-readable product name for the headset.
+///
+/// - Warning: this is **no longer used for any analytics signal**. Device identity is now reported
+///   using the raw identifier the operating system returns (see `getRawHardwareModel()`), so that a
+///   product name baked into a shipped SDK build can never misreport a device the build predates.
+///   The constant is retained only so existing integrations continue to compile; new code should
+///   not use it.
+///
+/// - Note: the name is misspelled (`vison`). Correcting it would break source compatibility for
+///   integrations that reference it, so the spelling is left as-is pending a deliberate,
+///   announced rename.
 public let visonProHmdType = "Vision Pro"
 
 /// The C3D Analytics SDK format version.

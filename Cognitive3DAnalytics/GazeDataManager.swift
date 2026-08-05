@@ -92,7 +92,7 @@ import Observation
             sessionId: core.getSessionId(),
             part: jsonPart,
             formatVersion: analyticsFormatVersion1,
-            hmdType: visonProHmdType,
+            hmdType: CachedRawDeviceSignals.hardwareModel,
             interval: sendInterval,
             properties: sessionProperties,
             data: eventsBeingSent
@@ -185,7 +185,7 @@ import Observation
             sessionId: core.getSessionId(),
             part: jsonPart,
             formatVersion: analyticsFormatVersion1,
-            hmdType: visonProHmdType,
+            hmdType: CachedRawDeviceSignals.hardwareModel,
             interval: sendInterval,
             properties: sessionProperties,
             data: eventsBeingSent
