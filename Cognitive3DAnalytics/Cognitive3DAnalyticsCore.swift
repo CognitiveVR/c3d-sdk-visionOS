@@ -838,6 +838,10 @@ public class Cognitive3DAnalyticsCore {
 
     // MARK: - Device Properties
 
+    /// - Warning: unused. This method has no call sites, and `DeviceProperty` already omits more than
+    ///   half of the device signals that are actually reported. The wire keys that matter live in
+    ///   `DeviceProperties.CodingKeys`, which is the single source of truth for the payload. Do not
+    ///   extend this switch when adding a signal — extending it would imply it is on the live path.
     func devicePropertyToString(propertyType: DeviceProperty) -> String {
         switch propertyType {
         case .appName: return "c3d.app.name"
