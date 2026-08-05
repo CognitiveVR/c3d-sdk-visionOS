@@ -41,20 +41,11 @@ public class BatteryLevelRecorder {
     }
 
     internal func startTracking() {
-#if targetEnvironment(simulator)
-        batteryLevel = 1.0
-        batteryState = .full
-#endif
-
         updateBatteryStatus()
     }
 
     // This method is called to log the current battery levels when a analytics session is ending.
     internal func endSession() {
-#if targetEnvironment(simulator)
-        batteryLevel = 0.2
-        batteryState = .charging
-#endif
         updateBatteryStatus()
     }
 
@@ -62,11 +53,13 @@ public class BatteryLevelRecorder {
         cleanUp()
     }
 
+    // Reports whatever the operating system reports, including on a simulator, where the level is
+    // -1.0 and the state is unknown. Substituting plausible-looking values there would put
+    // fabricated readings into battery analytics that are indistinguishable from real ones.
     @objc private func updateBatteryStatus() {
-#if !targetEnvironment(simulator)
         batteryLevel = UIDevice.current.batteryLevel
         batteryState = UIDevice.current.batteryState
-#endif
+
         // Send a sensor recording.
         let converted = convertBatteryStateToUnity(batteryState: batteryState)
         sensorRecorder.recordDataPoint(name: batteryLevelSensor, value: Double(batteryLevel))

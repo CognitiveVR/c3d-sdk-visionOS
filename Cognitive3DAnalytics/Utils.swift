@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Metal
 import RealityKit
 import SwiftUI
 
@@ -32,51 +33,91 @@ public class Utils {
     }
 }
 
-// TODO: refactor, is there a better way to get the AVP CPU type?
-func getDeviceChipInfo() -> String {
-    // Try CPU brand string first
+// MARK: - Raw hardware signals
+//
+// The analytics SDK reports what the operating system says, verbatim. It does not translate,
+// classify, or substitute device identities: any mapping from a raw identifier to a product name,
+// device family, or hardware category belongs in the analytics pipeline, which is versioned and can
+// be corrected after the fact. A value baked into a shipped SDK build can never be corrected for
+// sessions that were already captured.
+//
+// Consequence: every function below returns "" when the operating system has no answer. An empty
+// string means "this device did not report a value"; it must never be filled in with a guess.
+
+/// Reads a `sysctl` string value by name and returns it verbatim.
+///
+/// - Parameter name: the `sysctl` key, for example `hw.model`.
+/// - Returns: the raw string reported by the operating system, or `""` if the key is unavailable
+///   on this platform or the lookup fails. The value is never translated or substituted.
+func readSysctlString(_ name: String) -> String {
     var size = 0
-    var buffer: [CChar]
-
-    // Try machdep.cpu.brand_string
-    sysctlbyname("machdep.cpu.brand_string", nil, &size, nil, 0)
-    if size > 0 {
-        buffer = [CChar](repeating: 0, count: size)
-        if sysctlbyname("machdep.cpu.brand_string", &buffer, &size, nil, 0) == 0 {
-            let result = String(cString: buffer)
-            if result != "" {
-                return result
-            }
-        }
+    guard sysctlbyname(name, nil, &size, nil, 0) == 0, size > 0 else {
+        return ""
     }
 
-    // Try hw.model if CPU brand string fails
-    size = 0
-    sysctlbyname("hw.model", nil, &size, nil, 0)
-    if size > 0 {
-        buffer = [CChar](repeating: 0, count: size)
-        if sysctlbyname("hw.model", &buffer, &size, nil, 0) == 0 {
-            let model = String(cString: buffer)
-
-            // Translate known model identifiers
-            switch model {
-            case "N301AP":
-                return "Apple Vision Pro (M2)"
-            default:
-                if model.starts(with: "N301") {
-                    return "Apple Vision Pro (M2)"
-                }
-                return model
-            }
-        }
+    var buffer = [CChar](repeating: 0, count: size)
+    guard sysctlbyname(name, &buffer, &size, nil, 0) == 0 else {
+        return ""
     }
 
-    // Fallback with platform-specific default
-    #if os(visionOS)
-        return "Apple Vision Pro (M2)"
+    return String(cString: buffer)
+}
+
+/// The raw `hw.model` hardware identifier, for example `N301AP` on Apple Vision Pro.
+///
+/// This is the primary hardware-model signal for the pipeline: it identifies the specific hardware
+/// variant, which no other reported signal does.
+///
+/// - Important: in a simulator build this reports the **host Mac's** hardware identifier, not a
+///   headset. Consumers must read the simulator flag alongside it.
+func getRawHardwareModel() -> String {
+    return readSysctlString("hw.model")
+}
+
+/// The raw `machdep.cpu.brand_string` CPU identifier.
+///
+/// - Returns: the operating system's CPU brand string, or `""` when the key is not exposed. This
+///   key is not available on every Apple platform; an empty value is the correct, honest report and
+///   is preferable to substituting a hardcoded chip name. When it is empty, the hardware model
+///   signal is what identifies the silicon.
+/// - Important: in a simulator build this reports the **host Mac's** CPU, not the headset's.
+func getRawCPUBrandString() -> String {
+    return readSysctlString("machdep.cpu.brand_string")
+}
+
+/// The raw GPU name reported by Metal, for example `Apple M2 GPU`.
+///
+/// - Returns: `MTLDevice.name` verbatim, or `""` when no Metal device is available.
+/// - Important: in a simulator build this reports the **host Mac's** GPU, not the headset's.
+func getRawGPUName() -> String {
+    return MTLCreateSystemDefaultDevice()?.name ?? ""
+}
+
+/// Whether this is a simulator build.
+///
+/// This is a compile-time fact about the build, not a runtime measurement, and is reported as a
+/// plain boolean. Mapping it onto a runtime-host category is the pipeline's job.
+let isSimulatorBuild: Bool = {
+    #if targetEnvironment(simulator)
+        return true
     #else
-        return "Unknown Apple Device"
+        return false
     #endif
+}()
+
+/// Number of bytes in one gigabyte, binary definition (1024³, strictly a gibibyte).
+///
+/// Named and applied explicitly so the unit is unambiguous at every call site.
+let bytesPerGigabyte: UInt64 = 1_073_741_824
+
+/// Process-lifetime cache of the hardware signals.
+///
+/// `createDeviceProperties(core:)` runs on every gaze batch. These values cannot change while the
+/// process is alive, so the `sysctl` lookups and the Metal device creation are done once.
+enum CachedRawDeviceSignals {
+    static let hardwareModel = getRawHardwareModel()
+    static let cpuBrandString = getRawCPUBrandString()
+    static let gpuName = getRawGPUName()
 }
 
 /// Method to get the applicaton display name. If there is no display name, the method returns the bundle name.
@@ -86,20 +127,19 @@ public func getAppDisplayName() -> String {
     ) as! String
 }
 
+/// Total physical memory rounded down to whole gigabytes (1024³ bytes each).
+func getTotalDeviceMemoryInGigabytes() -> Int {
+    let totalMemoryInBytes = ProcessInfo.processInfo.physicalMemory
+    return Int(totalMemoryInBytes / bytesPerGigabyte)
+}
+
 // TODO: review, implement height etc.
 /// Get various properties for the application, device, and C3D SDK
+///
+/// Hardware values here are reported exactly as the operating system reports them. Turning a raw
+/// identifier such as `N301AP` into a product name, family, or category is done downstream, not
+/// here — see the "Raw hardware signals" section above.
 func createDeviceProperties(core: Cognitive3DAnalyticsCore) -> DeviceProperties {
-    // Determine simulator status before the initialization
-    let isInSimulator: Bool = {
-        #if targetEnvironment(simulator)
-            return true
-        #else
-            return false
-        #endif
-    }()
-
-    let cpu = getDeviceChipInfo()
-
     let appName = getAppDisplayName()
 
     func getOperatingSystemVersion() -> String {
@@ -107,19 +147,10 @@ func createDeviceProperties(core: Cognitive3DAnalyticsCore) -> DeviceProperties 
         return "visionOS \(osVersion.majorVersion).\(osVersion.minorVersion).\(osVersion.patchVersion)"
     }
 
-    func getTotalDeviceMemory() -> Int {
-        // Get the total physical memory in bytes
-        let totalMemoryBytes = ProcessInfo.processInfo.physicalMemory
-        return Int(totalMemoryBytes)
-    }
-
-    func getTotalDeviceMemoryGB() -> Int {
-        // Get the total physical memory in bytes
-        let totalMemoryBytes = ProcessInfo.processInfo.physicalMemory
-
-        // Convert bytes to gigabytes using system-specific divisor
-        return Int(totalMemoryBytes / 1_027_376_128)
-    }
+    // The raw hardware identifier is the single hardware-identity signal this platform exposes, so
+    // the device / model / HMD-type fields all carry it unchanged rather than three different
+    // hardcoded product names.
+    let hardwareModel = CachedRawDeviceSignals.hardwareModel
 
     // In visionOS, the app engine is the same as the operating system.
     return DeviceProperties(
@@ -127,19 +158,21 @@ func createDeviceProperties(core: Cognitive3DAnalyticsCore) -> DeviceProperties 
         appName: appName,
         appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0",
         appEngineVersion: getOperatingSystemVersion(),
-        deviceType: "Apple Vision Pro",
-        deviceCPU: cpu,
-        deviceModel: visonProHmdType,
-        deviceGPU: "Apple GPU",
+        deviceType: hardwareModel,
+        deviceCPU: CachedRawDeviceSignals.cpuBrandString,
+        deviceModel: hardwareModel,
+        deviceHardwareModel: hardwareModel,
+        deviceGPU: CachedRawDeviceSignals.gpuName,
         deviceOS: getOperatingSystemVersion(),
-        deviceMemory: getTotalDeviceMemoryGB(),
+        deviceMemoryInGigabytes: getTotalDeviceMemoryInGigabytes(),
         deviceId: core.getDeviceId(),
         roomSize: 0.0,
         roomSizeDescription: "Unknown",
-        appInEditor: isInSimulator,  // Use the pre-computed value
+        appInEditor: isSimulatorBuild,
+        isSimulator: isSimulatorBuild,
         // The version of the analytics SDK.
         version: "\(Cognitive3DAnalyticsCore.version)",
-        hmdType: visonProHmdType,
+        hmdType: hardwareModel,
         hmdManufacturer: "Apple",
         eyeTrackingEnabled: true,
         eyeTrackingType: "ARKit",

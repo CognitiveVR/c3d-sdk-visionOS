@@ -8,32 +8,37 @@
 import Foundation
 
 extension DeviceProperties {
-    // Convert DeviceProperties to dictionary
+    // Convert DeviceProperties to dictionary.
+    //
+    // Keys are taken from `CodingKeys` rather than written out again as string literals, so the
+    // dictionary form and the `Codable` form cannot drift apart. `DevicePropertiesTests` asserts
+    // that every declared key is present here and that a round trip is lossless.
     public func toDictionary() -> [String: Any] {
         let dict: [String: Any] = [
-            "c3d.username": username,
-            "c3d.app.name": appName,
-            "c3d.app.version": appVersion,
-            "c3d.app.engine.version": appEngineVersion,
-            "c3d.device.type": deviceType,
-            "c3d.device.cpu": deviceCPU,
-            "c3d.device.model": deviceModel,
-            "c3d.device.gpu": deviceGPU,
-            "c3d.device.os": deviceOS,
-            "c3d.device.memory": deviceMemory,
-            "c3d.deviceid": deviceId,
-            "c3d.roomsize": roomSize,
-            "c3d.roomsizeDescription": roomSizeDescription,
-            "c3d.app.inEditor": appInEditor,
-            "c3d.version": version,
-            "c3d.device.hmd.type": hmdType,
-            "c3d.device.hmd.manufacturer": hmdManufacturer,
-            "c3d.device.eyetracking.enabled": eyeTrackingEnabled,
-            "c3d.device.eyetracking.type": eyeTrackingType,
-            "c3d.app.sdktype": appSDKType,
-            "c3d.app.engine": appEngine
+            CodingKeys.username.rawValue: username,
+            CodingKeys.appName.rawValue: appName,
+            CodingKeys.appVersion.rawValue: appVersion,
+            CodingKeys.appEngineVersion.rawValue: appEngineVersion,
+            CodingKeys.deviceType.rawValue: deviceType,
+            CodingKeys.deviceCPU.rawValue: deviceCPU,
+            CodingKeys.deviceModel.rawValue: deviceModel,
+            CodingKeys.deviceHardwareModel.rawValue: deviceHardwareModel,
+            CodingKeys.deviceGPU.rawValue: deviceGPU,
+            CodingKeys.deviceOS.rawValue: deviceOS,
+            CodingKeys.deviceMemoryInGigabytes.rawValue: deviceMemoryInGigabytes,
+            CodingKeys.deviceId.rawValue: deviceId,
+            CodingKeys.roomSize.rawValue: roomSize,
+            CodingKeys.roomSizeDescription.rawValue: roomSizeDescription,
+            CodingKeys.appInEditor.rawValue: appInEditor,
+            CodingKeys.isSimulator.rawValue: isSimulator,
+            CodingKeys.version.rawValue: version,
+            CodingKeys.hmdType.rawValue: hmdType,
+            CodingKeys.hmdManufacturer.rawValue: hmdManufacturer,
+            CodingKeys.eyeTrackingEnabled.rawValue: eyeTrackingEnabled,
+            CodingKeys.eyeTrackingType.rawValue: eyeTrackingType,
+            CodingKeys.appSDKType.rawValue: appSDKType,
+            CodingKeys.appEngine.rawValue: appEngine
         ]
-
 
         return dict
     }
@@ -41,27 +46,29 @@ extension DeviceProperties {
     // Create a DeviceProperties from a dictionary
     public static func fromDictionary(_ dict: [String: Any]) -> DeviceProperties? {
         guard
-            let username = dict["c3d.username"] as? String,
-            let appName = dict["c3d.app.name"] as? String,
-            let appVersion = dict["c3d.app.version"] as? String,
-            let appEngineVersion = dict["c3d.app.engine.version"] as? String,
-            let deviceType = dict["c3d.device.type"] as? String,
-            let deviceCPU = dict["c3d.device.cpu"] as? String,
-            let deviceModel = dict["c3d.device.model"] as? String,
-            let deviceGPU = dict["c3d.device.gpu"] as? String,
-            let deviceOS = dict["c3d.device.os"] as? String,
-            let deviceMemory = dict["c3d.device.memory"] as? Int,
-            let deviceId = dict["c3d.deviceid"] as? String,
-            let roomSize = dict["c3d.roomsize"] as? Double,
-            let roomSizeDescription = dict["c3d.roomsizeDescription"] as? String,
-            let appInEditor = dict["c3d.app.inEditor"] as? Bool,
-            let version = dict["c3d.version"] as? String,
-            let hmdType = dict["c3d.device.hmd.type"] as? String,
-            let hmdManufacturer = dict["c3d.device.hmd.manufacturer"] as? String,
-            let eyeTrackingEnabled = dict["c3d.device.eyetracking.enabled"] as? Bool,
-            let eyeTrackingType = dict["c3d.device.eyetracking.type"] as? String,
-            let appSDKType = dict["c3d.app.sdktype"] as? String,
-            let appEngine = dict["c3d.app.engine"] as? String
+            let username = dict[CodingKeys.username.rawValue] as? String,
+            let appName = dict[CodingKeys.appName.rawValue] as? String,
+            let appVersion = dict[CodingKeys.appVersion.rawValue] as? String,
+            let appEngineVersion = dict[CodingKeys.appEngineVersion.rawValue] as? String,
+            let deviceType = dict[CodingKeys.deviceType.rawValue] as? String,
+            let deviceCPU = dict[CodingKeys.deviceCPU.rawValue] as? String,
+            let deviceModel = dict[CodingKeys.deviceModel.rawValue] as? String,
+            let deviceHardwareModel = dict[CodingKeys.deviceHardwareModel.rawValue] as? String,
+            let deviceGPU = dict[CodingKeys.deviceGPU.rawValue] as? String,
+            let deviceOS = dict[CodingKeys.deviceOS.rawValue] as? String,
+            let deviceMemoryInGigabytes = dict[CodingKeys.deviceMemoryInGigabytes.rawValue] as? Int,
+            let deviceId = dict[CodingKeys.deviceId.rawValue] as? String,
+            let roomSize = dict[CodingKeys.roomSize.rawValue] as? Double,
+            let roomSizeDescription = dict[CodingKeys.roomSizeDescription.rawValue] as? String,
+            let appInEditor = dict[CodingKeys.appInEditor.rawValue] as? Bool,
+            let isSimulator = dict[CodingKeys.isSimulator.rawValue] as? Bool,
+            let version = dict[CodingKeys.version.rawValue] as? String,
+            let hmdType = dict[CodingKeys.hmdType.rawValue] as? String,
+            let hmdManufacturer = dict[CodingKeys.hmdManufacturer.rawValue] as? String,
+            let eyeTrackingEnabled = dict[CodingKeys.eyeTrackingEnabled.rawValue] as? Bool,
+            let eyeTrackingType = dict[CodingKeys.eyeTrackingType.rawValue] as? String,
+            let appSDKType = dict[CodingKeys.appSDKType.rawValue] as? String,
+            let appEngine = dict[CodingKeys.appEngine.rawValue] as? String
         else {
             return nil
         }
@@ -74,13 +81,15 @@ extension DeviceProperties {
             deviceType: deviceType,
             deviceCPU: deviceCPU,
             deviceModel: deviceModel,
+            deviceHardwareModel: deviceHardwareModel,
             deviceGPU: deviceGPU,
             deviceOS: deviceOS,
-            deviceMemory: deviceMemory,
+            deviceMemoryInGigabytes: deviceMemoryInGigabytes,
             deviceId: deviceId,
             roomSize: roomSize,
             roomSizeDescription: roomSizeDescription,
             appInEditor: appInEditor,
+            isSimulator: isSimulator,
             version: version,
             hmdType: hmdType,
             hmdManufacturer: hmdManufacturer,
