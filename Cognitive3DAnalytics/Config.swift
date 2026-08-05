@@ -25,10 +25,15 @@ public let visionProHmdType = "Vision Pro"
 ///
 /// The correct spelling is canonical. This name stays so that integrations already referencing it
 /// keep compiling; it is deprecated so the compiler offers an automatic rename, and it can be
-/// retired once integrations have migrated. Its value is kept identical to `visionProHmdType` by a
-/// test, so the two cannot drift apart.
+/// retired once integrations have migrated.
+///
+/// - Note: this **binds to** `visionProHmdType` rather than repeating its literal, so the two cannot
+///   drift apart. A duplicated literal would be guarded only by a unit test, and this repository has
+///   no workflow that runs the test suite — so a future edit to the canonical value could ship two
+///   constants that disagree, with integrations still on the deprecated name silently receiving the
+///   stale one. Binding makes the equality a compile-time property instead of a hoped-for one.
 @available(*, deprecated, renamed: "visionProHmdType")
-public let visonProHmdType = "Vision Pro"
+public let visonProHmdType = visionProHmdType
 
 /// The C3D Analytics SDK format version.
 public let analyticsFormatVersion1 = "1.0"
