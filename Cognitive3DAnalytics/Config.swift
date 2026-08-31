@@ -15,15 +15,25 @@ public let gltfFileType = "gltf"
 /// A human-readable product name for the headset.
 ///
 /// - Warning: this is **no longer used for any analytics signal**. Device identity is now reported
-///   using the raw identifier the operating system returns (see `getRawHardwareModel()`), so that a
-///   product name baked into a shipped SDK build can never misreport a device the build predates.
-///   The constant is retained only so existing integrations continue to compile; new code should
-///   not use it.
+///   using the raw identifiers the operating system returns (see `getRawHardwareModel()` and
+///   `getRawHardwareMachineIdentifier()`), so that a product name baked into a shipped SDK build can
+///   never misreport a device the build predates. The constant is retained only so existing
+///   integrations continue to compile; new code should not use it.
+public let visionProHmdType = "Vision Pro"
+
+/// Misspelled (`vison`) alias of `visionProHmdType`, retained for source compatibility.
 ///
-/// - Note: the name is misspelled (`vison`). Correcting it would break source compatibility for
-///   integrations that reference it, so the spelling is left as-is pending a deliberate,
-///   announced rename.
-public let visonProHmdType = "Vision Pro"
+/// The correct spelling is canonical. This name stays so that integrations already referencing it
+/// keep compiling; it is deprecated so the compiler offers an automatic rename, and it can be
+/// retired once integrations have migrated.
+///
+/// - Note: this **binds to** `visionProHmdType` rather than repeating its literal, so the two cannot
+///   drift apart. A duplicated literal would be guarded only by a unit test, and this repository has
+///   no workflow that runs the test suite — so a future edit to the canonical value could ship two
+///   constants that disagree, with integrations still on the deprecated name silently receiving the
+///   stale one. Binding makes the equality a compile-time property instead of a hoped-for one.
+@available(*, deprecated, renamed: "visionProHmdType")
+public let visonProHmdType = visionProHmdType
 
 /// The C3D Analytics SDK format version.
 public let analyticsFormatVersion1 = "1.0"

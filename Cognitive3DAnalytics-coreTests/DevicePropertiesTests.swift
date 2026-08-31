@@ -87,6 +87,42 @@ final class DevicePropertiesTests: XCTestCase {
         )
     }
 
+    func testHardwareMachineIdentifierIsReportedVerbatim() {
+        // Recomputed from `sysctlbyname` directly rather than by calling the SDK's own helper a
+        // second time, so this compares the SDK against the operating system.
+        let expected = referenceSysctlString("hw.machine")
+        XCTAssertFalse(
+            expected.isEmpty,
+            "hw.machine returned nothing on this host; the rest of this assertion would be vacuous."
+        )
+
+        XCTAssertEqual(
+            getRawHardwareMachineIdentifier(),
+            expected,
+            "hw.machine must be forwarded verbatim."
+        )
+
+        let properties = deviceProperties()
+        XCTAssertEqual(properties.deviceHardwareMachine, expected)
+        XCTAssertEqual(
+            properties.toDictionary()["c3d.device.hw_machine"] as? String,
+            expected,
+            "The machine identifier must reach the payload unchanged."
+        )
+    }
+
+    func testHardwareMachineAndHardwareModelAreDistinctSysctls() {
+        // The two are read from different `sysctl` keys and answer different questions. If one were
+        // wired to the other's getter this would still pass only in the improbable case that the
+        // host reports identical values, so it is asserted against the operating system directly.
+        XCTAssertEqual(getRawHardwareModel(), referenceSysctlString("hw.model"))
+        XCTAssertEqual(getRawHardwareMachineIdentifier(), referenceSysctlString("hw.machine"))
+
+        let dict = deviceProperties().toDictionary()
+        XCTAssertEqual(dict["c3d.device.hw_model"] as? String, referenceSysctlString("hw.model"))
+        XCTAssertEqual(dict["c3d.device.hw_machine"] as? String, referenceSysctlString("hw.machine"))
+    }
+
     func testHardwareIdentityFieldsAllCarryTheRawHardwareModel() {
         let expected = referenceSysctlString("hw.model")
         let dict = deviceProperties().toDictionary()
@@ -122,6 +158,7 @@ final class DevicePropertiesTests: XCTestCase {
             "c3d.device.type",
             "c3d.device.model",
             "c3d.device.hw_model",
+            "c3d.device.hw_machine",
             "c3d.device.hmd.type",
             "c3d.device.cpu",
             "c3d.device.gpu"
@@ -149,11 +186,37 @@ final class DevicePropertiesTests: XCTestCase {
         #endif
 
         let dict = deviceProperties().toDictionary()
-        XCTAssertEqual(dict["c3d.device.isSimulator"] as? Bool, expected)
+        XCTAssertEqual(dict["c3d.device.is_simulator"] as? Bool, expected)
         XCTAssertEqual(
             dict["c3d.app.inEditor"] as? Bool,
             expected,
             "The retained legacy key must keep carrying the same value as the new one."
+        )
+    }
+
+    func testSimulatorFlagUsesTheUnderscoredWireKey() throws {
+        // The signal namespace is lowercase and underscore-separated. A camelCase spelling shipped
+        // once would be a permanent part of the capture record, so this is asserted on the encoded
+        // payload as well as the dictionary, and the camelCase spelling is asserted absent.
+        let dict = deviceProperties().toDictionary()
+        XCTAssertNotNil(
+            dict["c3d.device.is_simulator"],
+            "The simulator flag must be reported under c3d.device.is_simulator."
+        )
+        XCTAssertNil(
+            dict["c3d.device.isSimulator"],
+            "The camelCase spelling c3d.device.isSimulator must not be reported."
+        )
+
+        let data = try JSONEncoder().encode(deviceProperties())
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertNotNil(json["c3d.device.is_simulator"])
+        XCTAssertNil(json["c3d.device.isSimulator"])
+
+        XCTAssertEqual(
+            DeviceProperties.CodingKeys.isSimulator.rawValue,
+            "c3d.device.is_simulator",
+            "The declared wire key must be the underscored spelling."
         )
     }
 
@@ -181,6 +244,16 @@ final class DevicePropertiesTests: XCTestCase {
             "toDictionary() and CodingKeys disagree. A field was added to one and not the other; "
                 + "missing: \(declaredKeys.subtracting(dictKeys)), extra: \(dictKeys.subtracting(declaredKeys))."
         )
+
+        // Comparing the two sets against each other would still pass if a signal were dropped from
+        // both, so the keys that carry hardware identity are also named explicitly here.
+        for required in ["c3d.device.hw_model", "c3d.device.hw_machine", "c3d.device.is_simulator"] {
+            XCTAssertTrue(
+                declaredKeys.contains(required),
+                "\(required) is no longer a declared wire key."
+            )
+            XCTAssertTrue(dictKeys.contains(required), "\(required) is missing from toDictionary().")
+        }
     }
 
     func testDictionaryRoundTripIsLossless() {
@@ -203,13 +276,17 @@ final class DevicePropertiesTests: XCTestCase {
     }
 
     func testRoundTripFailsWhenARequiredKeyIsMissing() {
-        var dict = deviceProperties().toDictionary()
-        dict.removeValue(forKey: "c3d.device.hw_model")
+        // One removal per key, so that each key is individually proven to be load-bearing in
+        // `fromDictionary()` rather than merely present in the guard alongside another.
+        for key in ["c3d.device.hw_model", "c3d.device.hw_machine", "c3d.device.is_simulator"] {
+            var dict = deviceProperties().toDictionary()
+            dict.removeValue(forKey: key)
 
-        XCTAssertNil(
-            DeviceProperties.fromDictionary(dict),
-            "fromDictionary() must reject a payload that is missing the hardware model."
-        )
+            XCTAssertNil(
+                DeviceProperties.fromDictionary(dict),
+                "fromDictionary() must reject a payload that is missing \(key)."
+            )
+        }
     }
 
     // MARK: - Encoded payload
@@ -224,5 +301,23 @@ final class DevicePropertiesTests: XCTestCase {
             "The encoded payload must carry exactly the declared wire keys."
         )
         XCTAssertEqual(json["c3d.device.hw_model"] as? String, referenceSysctlString("hw.model"))
+        XCTAssertEqual(json["c3d.device.hw_machine"] as? String, referenceSysctlString("hw.machine"))
+    }
+
+    // MARK: - Public constant naming
+
+    /// The misspelled alias and the correctly spelled constant must stay in lockstep.
+    ///
+    /// - Note: this test is itself marked deprecated purely so that referencing the deprecated alias
+    ///   does not emit a warning here. The deprecation exists to prompt integrators to migrate; it
+    ///   is not a finding about this test. Deprecation is a compile-time attribute only, so the test
+    ///   still runs.
+    @available(*, deprecated)
+    func testMisspelledHmdTypeAliasMatchesTheCorrectSpelling() {
+        XCTAssertEqual(
+            visonProHmdType,
+            visionProHmdType,
+            "The deprecated misspelled alias has drifted from the correctly spelled constant."
+        )
     }
 }

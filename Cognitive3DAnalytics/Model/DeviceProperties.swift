@@ -25,9 +25,13 @@ public struct DeviceProperties: Codable {
     let deviceCPU: String
     /// Raw hardware identifier reported by the operating system, unclassified.
     let deviceModel: String
-    /// Raw `hw.model` hardware identifier, for example `N301AP`. The signal used downstream to
-    /// resolve the specific hardware variant.
+    /// Raw `hw.model` hardware identifier, for example `N301AP`. The board configuration; one of the
+    /// two signals used downstream to resolve the specific hardware variant.
     let deviceHardwareModel: String
+    /// Raw `hw.machine` device identifier, for example `RealityDevice14,1`. Reported alongside
+    /// `deviceHardwareModel`, not instead of it: this is the identifier Apple documents per hardware
+    /// generation, and it is often the only signal that separates one generation from the next.
+    let deviceHardwareMachine: String
     /// Raw GPU name reported by Metal, or `""` when no Metal device is available.
     let deviceGPU: String
     let deviceOS: String
@@ -51,6 +55,13 @@ public struct DeviceProperties: Codable {
     let appSDKType: String
     let appEngine: String
 
+    /// The wire keys for the properties above.
+    ///
+    /// - Note: the Swift property names are camelCase because that is Swift's convention; the wire
+    ///   keys are lowercase and underscore-separated because that is the convention for the
+    ///   `c3d.device.*` signal namespace. The two deliberately do not match — do not "fix" a key to
+    ///   mirror its property name. A wire key is part of a permanent capture record: once a session
+    ///   has been recorded with a key, that spelling exists for good.
     enum CodingKeys: String, CodingKey, CaseIterable {
         case username = "c3d.username"
         case appName = "c3d.app.name"
@@ -60,6 +71,7 @@ public struct DeviceProperties: Codable {
         case deviceCPU = "c3d.device.cpu"
         case deviceModel = "c3d.device.model"
         case deviceHardwareModel = "c3d.device.hw_model"
+        case deviceHardwareMachine = "c3d.device.hw_machine"
         case deviceGPU = "c3d.device.gpu"
         case deviceOS = "c3d.device.os"
         case deviceMemoryInGigabytes = "c3d.device.memory"
@@ -67,7 +79,7 @@ public struct DeviceProperties: Codable {
         case roomSize = "c3d.roomsize"
         case roomSizeDescription = "c3d.roomsizeDescription"
         case appInEditor = "c3d.app.inEditor"
-        case isSimulator = "c3d.device.isSimulator"
+        case isSimulator = "c3d.device.is_simulator"
         case version = "c3d.version"
         case hmdType = "c3d.device.hmd.type"
         case hmdManufacturer = "c3d.device.hmd.manufacturer"
